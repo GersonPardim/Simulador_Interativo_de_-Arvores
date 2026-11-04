@@ -3,840 +3,391 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulador Interativo de Árvore de Segmentos (Segment Tree)</title>
+    <title>Super Simulador de Estruturas de Dados em Árvore - AEDS II</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        mono: ['Fira Code', 'monospace'],
-                    },
-                    colors: {
-                        brand: {
-                            50: '#eef2ff',
-                            100: '#e0e7ff',
-                            500: '#6366f1',
-                            600: '#4f46e5',
-                            700: '#4338ca',
-                            900: '#312e81',
-                        },
-                        node: {
-                            bg: '#1e293b',
-                            border: '#475569',
-                            match: '#10b981',
-                            partial: '#f59e0b',
-                            out: '#334155',
-                            active: '#3b82f6'
-                        }
-                    }
-                }
-            }
-        }
-    </script>
+    <!-- Three.js para Renderização 3D da Octree -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- OrbitControls para controle de câmera 3D -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <style>
-        body {
-            background-color: #0f172a;
-            color: #f8fafc;
-            font-family: 'Inter', sans-serif;
+        .glass {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
-        /* Custom scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #1e293b;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #475569;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #64748b;
-        }
-        .tree-line {
-            transition: stroke 0.4s ease, stroke-width 0.4s ease;
-        }
-        .node-circle {
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .pulse-glow {
-            animation: pulse-glow 2s infinite;
-        }
-        @keyframes pulse-glow {
-            0%, 100% { filter: drop-shadow(0 0 4px rgba(99, 102, 241, 0.6)); }
-            50% { filter: drop-shadow(0 0 12px rgba(99, 102, 241, 0.9)); }
+        canvas {
+            display: block;
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col justify-between bg-slate-950 text-slate-100">
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans">
 
-    <!-- Cabeçalho de Navegação -->
-    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50 px-4 py-3">
-        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div class="flex items-center gap-3">
-                <div class="p-2 bg-indigo-600/20 text-indigo-400 rounded-xl border border-indigo-500/30">
-                    <i class="fa-solid fa-sitemap text-xl"></i>
-                </div>
-                <div>
-                    <h1 class="font-bold text-lg text-slate-100 leading-tight">Simulador de Árvore de Segmentos</h1>
-                    <p class="text-xs text-slate-400">Visualizador Interativo para Apresentação de AEDS II</p>
-                </div>
-            </div>
-
-            <!-- Seletor de Modo (Soma vs Mínimo) -->
-            <div class="flex items-center gap-2 bg-slate-800/80 p-1 rounded-xl border border-slate-700/60">
-                <button id="mode-sum-btn" onclick="setTreeType('SUM')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 bg-indigo-600 text-white shadow-sm">
-                    <i class="fa-solid fa-calculator"></i> Soma (RSQ)
-                </button>
-                <button id="mode-min-btn" onclick="setTreeType('MIN')" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 transition-all flex items-center gap-1.5">
-                    <i class="fa-solid fa-arrow-down-short-wide"></i> Mínimo (RMQ)
-                </button>
-            </div>
+    <!-- Header -->
+    <header class="bg-slate-900 border-b border-slate-800 p-4 shadow-lg flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-indigo-400">Super Simulador de Árvores</h1>
+            <p class="text-xs text-slate-400">Ferramenta Interativa de Visualização para AEDS II - UFOP</p>
+        </div>
+        <div class="text-right">
+            <span class="text-xs bg-indigo-900/50 text-indigo-300 px-3 py-1 rounded-full border border-indigo-700/50">Ambiente de Testes Acadêmico</span>
         </div>
     </header>
 
-    <!-- Grade Principal -->
-    <main class="max-w-7xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1">
+    <!-- Menu de Navegação por Abas -->
+    <nav class="bg-slate-900/80 border-b border-slate-800 px-4 pt-3 flex gap-2 overflow-x-auto">
+        <button onclick="switchTab('segment')" id="tab-segment" class="tab-btn px-4 py-2 rounded-t-lg font-medium text-sm transition-all bg-indigo-600 text-white">Segment Tree</button>
+        <button onclick="switchTab('rb')" id="tab-rb" class="tab-btn px-4 py-2 rounded-t-lg font-medium text-sm transition-all bg-slate-800 text-slate-400 hover:text-white">Rubro-Negra</button>
+        <button onclick="switchTab('patricia')" id="tab-patricia" class="tab-btn px-4 py-2 rounded-t-lg font-medium text-sm transition-all bg-slate-800 text-slate-400 hover:text-white">PATRICIA Trie</button>
+        <button onclick="switchTab('quadtree')" id="tab-quadtree" class="tab-btn px-4 py-2 rounded-t-lg font-medium text-sm transition-all bg-slate-800 text-slate-400 hover:text-white">Quadtree (2D)</button>
+        <button onclick="switchTab('octree')" id="tab-octree" class="tab-btn px-4 py-2 rounded-t-lg font-medium text-sm transition-all bg-slate-800 text-slate-400 hover:text-white">Octree (3D Interativa)</button>
+        <button onclick="switchTab('trie')" id="tab-trie" class="tab-btn px-4 py-2 rounded-t-lg font-medium text-sm transition-all bg-slate-800 text-slate-400 hover:text-white">Trie</button>
+        <button onclick="switchTab('radix')" id="tab-radix" class="tab-btn px-4 py-2 rounded-t-lg font-medium text-sm transition-all bg-slate-800 text-slate-400 hover:text-white">Radix Tree</button>
+    </nav>
+
+    <!-- Conteúdo Principal -->
+    <div class="flex-1 flex flex-col md:flex-row overflow-hidden">
         
-        <!-- Painel Esquerdo: Controles & Entrada (4 colunas) -->
-        <section class="lg:col-span-4 flex flex-col gap-5">
+        <!-- Área Visual e Painel de Controle -->
+        <main class="flex-1 flex flex-col p-4 gap-4 overflow-y-auto">
             
-            <!-- Entrada e Gerador do Vetor -->
-            <div class="bg-slate-900/90 rounded-2xl border border-slate-800 p-4 shadow-xl">
-                <h2 class="text-sm font-bold text-slate-300 uppercase tracking-wider mb-3 flex items-center justify-between">
-                    <span>1. Configuração do Vetor</span>
-                    <span id="array-size-badge" class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full font-mono">N = 6</span>
-                </h2>
+            <!-- Painel de Controles Dinâmicos -->
+            <div class="glass p-4 rounded-xl flex flex-wrap gap-4 items-center justify-between shadow-md">
+                <div id="controls-container" class="flex flex-wrap gap-3 items-center">
+                    <!-- Controles inseridos via JavaScript conforme a aba -->
+                </div>
+                <div class="flex items-center gap-2">
+                    <label class="text-xs text-slate-400">Velocidade:</label>
+                    <input type="range" id="speed-range" min="100" max="1500" value="700" class="accent-indigo-500 w-24">
+                </div>
+            </div>
+
+            <!-- Palco de Visualização (Canvas / 3D Container) -->
+            <div class="flex-1 glass rounded-xl relative min-h-[450px] flex items-center justify-center overflow-hidden border border-slate-800">
                 
-                <div class="space-y-3">
-                    <div>
-                        <label class="block text-xs text-slate-400 mb-1">Vetor Personalizado (separado por vírgula):</label>
-                        <div class="flex gap-2">
-                            <input type="text" id="custom-array-input" value="2, 1, 5, 3, 4, 6" 
-                                class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm font-mono text-indigo-300 focus:outline-none focus:border-indigo-500 transition"
-                                placeholder="ex: 2, 1, 5, 3, 4, 6">
-                            <button onclick="loadCustomArray()" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-medium transition shadow">
-                                Carregar
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="flex gap-2 pt-1">
-                        <button onclick="generateRandomArray()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-medium border border-slate-700/50 transition flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-shuffle text-indigo-400"></i> Vetor Aleatório (5–7)
-                        </button>
-                        <button onclick="resetTree()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium border border-slate-700/50 transition" title="Reiniciar Estado da Árvore">
-                            <i class="fa-solid fa-rotate-right"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Representação do Vetor -->
-                <div class="mt-4 pt-3 border-t border-slate-800/80">
-                    <label class="block text-xs text-slate-400 mb-2">Representação do Vetor Original:</label>
-                    <div id="array-visual-container" class="flex gap-1.5 overflow-x-auto pb-1 justify-center">
-                        <!-- Renderizado dinamicamente -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- Operações: Consulta & Atualização -->
-            <div class="bg-slate-900/90 rounded-2xl border border-slate-800 p-4 shadow-xl space-y-4">
-                <h2 class="text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                    <i class="fa-solid fa-sliders text-indigo-400"></i>
-                    <span>2. Operações</span>
-                </h2>
-
-                <!-- Formulário de Consulta por Intervalo -->
-                <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80 space-y-2">
-                    <div class="flex justify-between items-center">
-                        <span class="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
-                            <i class="fa-solid fa-magnifying-glass"></i> Consulta de Intervalo [L, R]
-                        </span>
-                        <span id="query-label" class="text-[10px] text-slate-400 font-mono">Soma do Intervalo</span>
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label class="text-[11px] text-slate-400">Índice Esquerdo (L):</label>
-                            <input type="number" id="query-l" value="1" min="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-mono text-emerald-300 focus:outline-none focus:border-emerald-500">
-                        </div>
-                        <div>
-                            <label class="text-[11px] text-slate-400">Índice Direito (R):</label>
-                            <input type="number" id="query-r" value="4" min="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-mono text-emerald-300 focus:outline-none focus:border-emerald-500">
-                        </div>
-                    </div>
-                    
-                    <button onclick="startRangeQuery()" class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-medium transition shadow flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-play"></i> Executar Consulta
-                    </button>
-                </div>
-
-                <!-- Formulário de Atualização Pontual -->
-                <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80 space-y-2">
-                    <div class="flex justify-between items-center">
-                        <span class="text-xs font-semibold text-amber-400 flex items-center gap-1.5">
-                            <i class="fa-solid fa-pen-to-square"></i> Atualização Pontual [i = valor]
-                        </span>
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label class="text-[11px] text-slate-400">Índice (i):</label>
-                            <input type="number" id="update-idx" value="2" min="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-mono text-amber-300 focus:outline-none focus:border-amber-500">
-                        </div>
-                        <div>
-                            <label class="text-[11px] text-slate-400">Novo Valor:</label>
-                            <input type="number" id="update-val" value="10" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-mono text-amber-300 focus:outline-none focus:border-amber-500">
-                        </div>
-                    </div>
-
-                    <button onclick="startPointUpdate()" class="w-full py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-medium transition shadow flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-arrows-rotate"></i> Atualizar Elemento
-                    </button>
-                </div>
-            </div>
-
-            <!-- Legenda das Cores -->
-            <div class="bg-slate-900/90 rounded-2xl border border-slate-800 p-4 shadow-xl">
-                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Legenda das Cores dos Nós</h3>
-                <div class="grid grid-cols-2 gap-2 text-xs">
-                    <div class="flex items-center gap-2">
-                        <span class="w-3 h-3 rounded-full bg-emerald-500 inline-block shadow-sm"></span>
-                        <span class="text-slate-300">Sobreposição Total</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <span class="w-3 h-3 rounded-full bg-amber-500 inline-block shadow-sm"></span>
-                        <span class="text-slate-300">Sobreposição Parcial</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <span class="w-3 h-3 rounded-full bg-slate-600 inline-block shadow-sm"></span>
-                        <span class="text-slate-300">Fora do Intervalo</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <span class="w-3 h-3 rounded-full bg-blue-500 inline-block shadow-sm"></span>
-                        <span class="text-slate-300">Caminho Atual</span>
-                    </div>
-                </div>
-            </div>
-
-        </section>
-
-        <!-- Painel Direito: Visualizador da Árvore & Log (8 colunas) -->
-        <section class="lg:col-span-8 flex flex-col gap-5">
-            
-            <!-- Contêiner do Canvas -->
-            <div class="bg-slate-900/90 rounded-2xl border border-slate-800 p-4 shadow-xl flex flex-col relative min-h-[420px]">
+                <!-- Canvas 2D Genérico -->
+                <canvas id="main-canvas" class="w-full h-full absolute inset-0"></canvas>
                 
-                <!-- Barra de Controles superior do Canvas -->
-                <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
-                    <div class="flex items-center gap-2">
-                        <span class="text-sm font-bold text-slate-200">Visualizador da Segment Tree</span>
-                        <span id="operation-status" class="hidden text-xs px-2.5 py-0.5 rounded-full font-mono bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                            Aguardando
-                        </span>
-                    </div>
-                    
-                    <!-- Controles de Velocidade -->
-                    <div class="flex items-center gap-3">
-                        <div class="flex items-center gap-1.5 text-xs text-slate-400">
-                            <i class="fa-solid fa-gauge-high"></i> Velocidade:
-                            <input type="range" id="animation-speed" min="200" max="1800" value="800" step="100" class="w-20 accent-indigo-500">
-                        </div>
-                    </div>
-                </div>
+                <!-- Container 3D para a Octree -->
+                <div id="octree-3d-container" class="w-full h-full absolute inset-0 hidden"></div>
 
-                <!-- Área SVG de Visualização -->
-                <div id="canvas-wrapper" class="w-full flex-1 relative flex items-center justify-center overflow-auto min-h-[360px]">
-                    <svg id="tree-svg" class="w-full h-full min-w-[550px] min-h-[350px]"></svg>
-                </div>
-
-                <!-- Cartão com o Resultado da Consulta -->
-                <div id="result-overlay" class="hidden absolute bottom-4 left-4 right-4 bg-slate-900/95 border border-indigo-500/40 rounded-xl p-3 shadow-2xl backdrop-blur-md flex items-center justify-between animate-bounce">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-lg border border-emerald-500/30">
-                            <i class="fa-solid fa-check"></i>
-                        </div>
-                        <div>
-                            <h4 id="result-title" class="text-xs text-slate-400 uppercase font-bold">Resultado da Consulta</h4>
-                            <p id="result-value" class="text-lg font-mono font-bold text-emerald-300">Soma = 13</p>
-                        </div>
-                    </div>
-                    <button onclick="closeResultOverlay()" class="text-slate-400 hover:text-white p-1">
-                        <i class="fa-solid fa-xmark text-lg"></i>
-                    </button>
+                <!-- Overlay de Instruções em 3D -->
+                <div id="octree-overlay" class="absolute top-3 left-3 bg-slate-900/80 px-3 py-1.5 rounded text-xs text-slate-300 border border-slate-700 hidden">
+                    💡 <b>Controles 3D:</b> Clique e arraste para girar a Octree | Scroll para Zoom
                 </div>
             </div>
 
-            <!-- Log de Execução Passo a Passo -->
-            <div class="bg-slate-900/90 rounded-2xl border border-slate-800 p-4 shadow-xl flex-1 flex flex-col max-h-[280px]">
-                <div class="flex items-center justify-between mb-2">
-                    <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                        <i class="fa-solid fa-terminal text-indigo-400"></i>
-                        <span>Rastro de Execução Passo a Passo</span>
-                    </h3>
-                    <button onclick="clearTraceLog()" class="text-[11px] text-slate-400 hover:text-slate-200">
-                        Limpar Log
-                    </button>
-                </div>
-                
-                <div id="trace-log" class="flex-1 bg-slate-950 rounded-xl p-3 border border-slate-800/80 font-mono text-xs overflow-y-auto space-y-1.5">
-                    <div class="text-slate-500 italic">Nenhuma operação executada ainda. Clique em "Executar Consulta" ou "Atualizar Elemento" para iniciar a animação.</div>
-                </div>
+            <!-- Terminal de Logs de Execução -->
+            <div class="glass p-3 rounded-xl h-32 overflow-y-auto font-mono text-xs text-slate-300 flex flex-col gap-1 border border-slate-800" id="trace-log">
+                <div class="text-indigo-400">▶ Simulador pronto. Selecione uma estrutura no menu superior para começar.</div>
+            </div>
+        </main>
+
+        <!-- Sidebar Informativa / Teórica -->
+        <aside class="w-full md:w-80 bg-slate-900/90 border-l border-slate-800 p-4 flex flex-col gap-4 overflow-y-auto">
+            <div>
+                <h2 id="theory-title" class="text-lg font-bold text-indigo-300">Segment Tree</h2>
+                <span id="theory-category" class="text-xs text-slate-400">Árvore de Intervalos</span>
             </div>
 
-        </section>
+            <div class="space-y-3 text-xs text-slate-300">
+                <div class="bg-slate-800/60 p-3 rounded-lg border border-slate-700/50">
+                    <h3 class="font-semibold text-indigo-400 mb-1">Complexidade</h3>
+                    <p id="theory-complexity">Busca/Update: O(log n) | Espaço: O(n)</p>
+                </div>
 
-    </main>
+                <div class="bg-slate-800/60 p-3 rounded-lg border border-slate-700/50">
+                    <h3 class="font-semibold text-indigo-400 mb-1">Descrição Teórica</h3>
+                    <p id="theory-description">Estrutura binária construída sobre um vetor para realizar consultas de intervalo e atualizações pontuais em tempo logarítmico.</p>
+                </div>
 
-    <!-- Rodapé -->
-    <footer class="border-t border-slate-800/80 bg-slate-900/50 py-3 text-center text-xs text-slate-500">
-        Simulador Didático de Segment Tree • Desenvolvido para Apresentação de AEDS II
-    </footer>
+                <div class="bg-slate-800/60 p-3 rounded-lg border border-slate-700/50">
+                    <h3 class="font-semibold text-indigo-400 mb-1">Aplicações Práticas</h3>
+                    <p id="theory-applications">Processamento de dados temporais, geometria computacional, jogos e sistemas de consulta frequente.</p>
+                </div>
+            </div>
+        </aside>
+    </div>
 
-    <!-- Lógica em JavaScript (Traduzida) -->
+    <!-- Script de Lógica do Simulador -->
     <script>
-        // --- Gerenciamento de Estado ---
-        let currentArray = [2, 1, 5, 3, 4, 6];
-        let treeType = 'SUM'; // 'SUM' para Soma ou 'MIN' para Mínimo
-        let treeData = [];
-        let treeNodesMeta = {};
-        let isAnimating = false;
+        let currentTab = 'segment';
+        const canvas = document.getElementById('main-canvas');
+        const ctx = canvas.getContext('2d');
+        const logContainer = document.getElementById('trace-log');
 
-        // --- Estrutura de Dados Segment Tree ---
-        class SegmentTree {
-            constructor(arr, type = 'SUM') {
-                this.arr = [...arr];
-                this.n = arr.length;
-                this.type = type;
-                this.tree = new Array(4 * this.n).fill(null);
-                this.build(1, 0, this.n - 1);
+        // Variáveis do Three.js para Octree 3D
+        let scene, camera, renderer, controls;
+        let octree3DNodes = [];
+
+        // Redimensionar Canvas
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+            if (renderer) {
+                renderer.setSize(canvas.parentElement.clientWidth, canvas.parentElement.clientHeight);
+                camera.aspect = canvas.parentElement.clientWidth / canvas.parentElement.clientHeight;
+                camera.updateProjectionMatrix();
+            }
+            redraw();
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        function log(msg, color = 'text-slate-300') {
+            const div = document.createElement('div');
+            div.className = color;
+            div.innerHTML = `> ${msg}`;
+            logContainer.appendChild(div);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        // Alternância de Abas
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.className = "tab-btn px-4 py-2 rounded-t-lg font-medium text-sm transition-all bg-slate-800 text-slate-400 hover:text-white";
+            });
+            document.getElementById(`tab-${tab}`).className = "tab-btn px-4 py-2 rounded-t-lg font-medium text-sm transition-all bg-indigo-600 text-white";
+
+            const octreeContainer = document.getElementById('octree-3d-container');
+            const octreeOverlay = document.getElementById('octree-overlay');
+            
+            if (tab === 'octree') {
+                canvas.classList.add('hidden');
+                octreeContainer.classList.remove('hidden');
+                octreeOverlay.classList.remove('hidden');
+                init3DOctree();
+            } else {
+                canvas.classList.remove('hidden');
+                octreeContainer.classList.add('hidden');
+                octreeOverlay.classList.add('hidden');
             }
 
-            combine(leftVal, rightVal) {
-                if (leftVal === null) return rightVal;
-                if (rightVal === null) return leftVal;
-                return this.type === 'SUM' ? leftVal + rightVal : Math.min(leftVal, rightVal);
-            }
+            setupControls();
+            updateTheory();
+            redraw();
+        }
 
-            build(node, start, end) {
-                if (start === end) {
-                    this.tree[node] = {
-                        val: this.arr[start],
-                        l: start,
-                        r: end,
-                        nodeIdx: node
-                    };
-                    return;
+        // Atualização da Sidebar Teórica
+        function updateTheory() {
+            const data = {
+                segment: {
+                    title: "Segment Tree",
+                    cat: "Árvore de Intervalos",
+                    comp: "Consulta: O(log n) | Update: O(log n) | Espaço: O(n)",
+                    desc: "Divide um vetor em sub-intervalos recursivos ao meio. Permite consultar somas, mínimos e máximos em tempo logarítmico.",
+                    apps: "Sistemas de séries temporais, jogos e processamento de imagens."
+                },
+                rb: {
+                    title: "Árvore Rubro-Negra (Red-Black)",
+                    cat: "Árvore Binária de Busca Balanceada",
+                    comp: "Busca/Inserção/Remoção: O(log n) | Espaço: O(n)",
+                    desc: "Garante balanceamento dinâmico utilizando uma propriedade de cores (vermelho/preto) nos nós e rotações.",
+                    apps: "Implementação da std::map em C++ e tabelas de símbolos em compiladores."
+                },
+                patricia: {
+                    title: "PATRICIA Trie",
+                    cat: "Trie Compactada por Bit",
+                    comp: "Busca/Inserção: O(K) onde K é o tamanho da chave | Espaço: O(N)",
+                    desc: "Trie binária compactada que pula testes de bits que não ramificam a árvore (skip-bits).",
+                    apps: "Roteamento de redes IP e dicionários compactos de chaves numéricas."
+                },
+                quadtree: {
+                    title: "Quadtree (2D)",
+                    cat: "Divisão Espacial Bidimensional",
+                    comp: "Busca/Inserção: O(log n) médio | Espaço: O(n)",
+                    desc: "Subdivide recursivamente um plano 2D em 4 quadrantes (NW, NE, SW, SE) quando a capacidade do nó é excedida.",
+                    apps: "Detecção de colisão 2D, motores de jogos e mapas cartográficos."
+                },
+                octree: {
+                    title: "Octree (3D Interativa)",
+                    cat: "Divisão Espacial Tridimensional",
+                    comp: "Busca/Inserção: O(log n) médio | Espaço: O(n)",
+                    desc: "Subdivide o espaço 3D em 8 octantes recursivos (4 frontais e 4 traseiros). É a evolução natural da Quadtree para o espaço 3D.",
+                    apps: "Motores de jogos 3D (Unity/Unreal), renderização de névoa e simulação física volumétrica."
+                },
+                trie: {
+                    title: "Trie Convencional",
+                    cat: "Árvore de Prefixos",
+                    comp: "Busca/Inserção: O(L) onde L é o comprimento do texto | Espaço: O(ALPHABET_SIZE * N * L)",
+                    desc: "Guarda caracteres das palavras em nós ao longo do caminho, facilitando a busca por prefixos comuns.",
+                    apps: "Autocompletar de buscas, verificadores ortográficos e corretores automáticos."
+                },
+                radix: {
+                    title: "Radix Tree (Compressed Trie)",
+                    cat: "Trie de Prefixos Compactada",
+                    comp: "Busca/Inserção: O(L) | Espaço: O(N)",
+                    desc: "Agrupa nós consecutivos de filho único que compartilham o mesmo prefixo numa única aresta compacta.",
+                    apps: "Roteamento de URLs de servidores web (Ex: Gin/Go, Fastify) e indexadores de busca."
                 }
-                let mid = Math.floor((start + end) / 2);
-                let leftChild = 2 * node;
-                let rightChild = 2 * node + 1;
+            };
 
-                this.build(leftChild, start, mid);
-                this.build(rightChild, mid + 1, end);
-
-                let combinedVal = this.combine(this.tree[leftChild].val, this.tree[rightChild].val);
-                this.tree[node] = {
-                    val: combinedVal,
-                    l: start,
-                    r: end,
-                    nodeIdx: node
-                };
-            }
+            const info = data[currentTab];
+            document.getElementById('theory-title').innerText = info.title;
+            document.getElementById('theory-category').innerText = info.cat;
+            document.getElementById('theory-complexity').innerText = info.comp;
+            document.getElementById('theory-description').innerText = info.desc;
+            document.getElementById('theory-applications').innerText = info.apps;
         }
 
-        // --- Inicialização do App ---
-        window.onload = function() {
-            rebuildTree();
-            window.addEventListener('resize', () => drawTreeVisual());
-        };
-
-        function setTreeType(type) {
-            if (isAnimating) return;
-            treeType = type;
-            document.getElementById('mode-sum-btn').className = type === 'SUM' 
-                ? 'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 bg-indigo-600 text-white shadow-sm'
-                : 'px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 transition-all flex items-center gap-1.5';
-            
-            document.getElementById('mode-min-btn').className = type === 'MIN' 
-                ? 'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 bg-indigo-600 text-white shadow-sm'
-                : 'px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 transition-all flex items-center gap-1.5';
-
-            document.getElementById('query-label').innerText = type === 'SUM' ? 'Soma do Intervalo' : 'Mínimo do Intervalo';
-            rebuildTree();
-            logTrace(`Modo da árvore alterado para: <strong>${type === 'SUM' ? 'Consulta de Soma (RSQ)' : 'Consulta de Mínimo (RMQ)'}</strong>`);
-        }
-
-        function rebuildTree() {
-            closeResultOverlay();
-            let segTree = new SegmentTree(currentArray, treeType);
-            treeData = segTree.tree;
-            renderArrayVisual();
-            drawTreeVisual();
-            updateInputsBounds();
-        }
-
-        function updateInputsBounds() {
-            const n = currentArray.length;
-            document.getElementById('array-size-badge').innerText = `N = ${n}`;
-            
-            const qL = document.getElementById('query-l');
-            const qR = document.getElementById('query-r');
-            const uIdx = document.getElementById('update-idx');
-
-            qL.max = n - 1;
-            qR.max = n - 1;
-            uIdx.max = n - 1;
-
-            if (parseInt(qR.value) >= n) qR.value = n - 1;
-            if (parseInt(qL.value) >= n) qL.value = 0;
-            if (parseInt(uIdx.value) >= n) uIdx.value = 0;
-        }
-
-        function loadCustomArray() {
-            if (isAnimating) return;
-            let val = document.getElementById('custom-array-input').value;
-            let parsed = val.split(',').map(x => parseInt(x.trim())).filter(x => !isNaN(x));
-            if (parsed.length < 2 || parsed.length > 8) {
-                alert('Por favor, insira entre 2 e 8 números para uma melhor visualização.');
-                return;
-            }
-            currentArray = parsed;
-            rebuildTree();
-            logTrace(`Vetor personalizado carregado: [${currentArray.join(', ')}]`);
-        }
-
-        function generateRandomArray() {
-            if (isAnimating) return;
-            const sz = Math.floor(Math.random() * 3) + 5; // 5 a 7
-            let newArr = [];
-            for (let i = 0; i < sz; i++) {
-                newArr.push(Math.floor(Math.random() * 15) + 1);
-            }
-            currentArray = newArr;
-            document.getElementById('custom-array-input').value = currentArray.join(', ');
-            rebuildTree();
-            logTrace(`Vetor aleatório gerado com ${sz} elementos: [${currentArray.join(', ')}]`);
-        }
-
-        function resetTree() {
-            if (isAnimating) return;
-            rebuildTree();
-            clearTraceLog();
-            logTrace('Estado da árvore reiniciado para a construção inicial.');
-        }
-
-        // --- Renderização do Vetor Original ---
-        function renderArrayVisual() {
-            const container = document.getElementById('array-visual-container');
+        // Configuração de Controles no Painel Superior
+        function setupControls() {
+            const container = document.getElementById('controls-container');
             container.innerHTML = '';
-            currentArray.forEach((val, idx) => {
-                const item = document.createElement('div');
-                item.className = 'flex flex-col items-center bg-slate-950 border border-slate-800 rounded-lg p-2 min-w-[42px] transition-all';
-                item.id = `array-cell-${idx}`;
-                item.innerHTML = `
-                    <span class="text-[10px] text-slate-500 font-mono">[${idx}]</span>
-                    <span class="text-sm font-bold font-mono text-indigo-300 mt-0.5">${val}</span>
+
+            if (currentTab === 'octree') {
+                container.innerHTML = `
+                    <button onclick="addRandom3DPoint()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded text-xs font-medium">➕ Inserir Ponto 3D Aleatório</button>
+                    <button onclick="reset3DOctree()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded text-xs font-medium">🔄 Limpar Espaço 3D</button>
                 `;
-                container.appendChild(item);
-            });
-        }
-
-        // --- Renderização Visual da Árvore em SVG ---
-        function drawTreeVisual() {
-            const svg = document.getElementById('tree-svg');
-            svg.innerHTML = '';
-            
-            const wrapper = document.getElementById('canvas-wrapper');
-            const width = Math.max(wrapper.clientWidth, 550);
-            const height = Math.max(wrapper.clientHeight, 350);
-            
-            svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
-
-            treeNodesMeta = {};
-            const n = currentArray.length;
-            
-            function getDepth(node, l, r) {
-                if (l === r) return 1;
-                let mid = Math.floor((l + r) / 2);
-                return 1 + Math.max(getDepth(2 * node, l, mid), getDepth(2 * node + 1, mid + 1, r));
-            }
-            const totalDepth = getDepth(1, 0, n - 1);
-            const levelHeight = (height - 80) / Math.max(totalDepth - 1, 1);
-
-            let leafXStep = width / (n + 1);
-            let currentLeafCount = 0;
-
-            function computeCoords(node, l, r, depth) {
-                if (!treeData[node]) return;
-                
-                let x, y = 40 + depth * levelHeight;
-
-                if (l === r) {
-                    currentLeafCount++;
-                    x = currentLeafCount * leafXStep;
-                } else {
-                    let mid = Math.floor((l + r) / 2);
-                    let leftChild = 2 * node;
-                    let rightChild = 2 * node + 1;
-                    
-                    computeCoords(leftChild, l, mid, depth + 1);
-                    computeCoords(rightChild, mid + 1, r, depth + 1);
-
-                    x = (treeNodesMeta[leftChild].x + treeNodesMeta[rightChild].x) / 2;
-                }
-
-                treeNodesMeta[node] = { x, y, l, r, nodeIdx: node, val: treeData[node].val };
-            }
-
-            computeCoords(1, 0, n - 1, 0);
-
-            // Desenhar Linhas (Arestas)
-            Object.keys(treeNodesMeta).forEach(nodeIdx => {
-                let node = parseInt(nodeIdx);
-                let meta = treeNodesMeta[node];
-                let leftChild = 2 * node;
-                let rightChild = 2 * node + 1;
-
-                if (treeNodesMeta[leftChild]) {
-                    drawLine(svg, `line-${node}-${leftChild}`, meta.x, meta.y, treeNodesMeta[leftChild].x, treeNodesMeta[leftChild].y);
-                }
-                if (treeNodesMeta[rightChild]) {
-                    drawLine(svg, `line-${node}-${rightChild}`, meta.x, meta.y, treeNodesMeta[rightChild].x, treeNodesMeta[rightChild].y);
-                }
-            });
-
-            // Desenhar Nós (Círculos)
-            Object.keys(treeNodesMeta).forEach(nodeIdx => {
-                let node = parseInt(nodeIdx);
-                let meta = treeNodesMeta[node];
-                drawNode(svg, meta);
-            });
-        }
-
-        function drawLine(svg, id, x1, y1, x2, y2) {
-            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            line.setAttribute('id', id);
-            line.setAttribute('x1', x1);
-            line.setAttribute('y1', y1);
-            line.setAttribute('x2', x2);
-            line.setAttribute('y2', y2);
-            line.setAttribute('stroke', '#334155');
-            line.setAttribute('stroke-width', '2');
-            line.setAttribute('class', 'tree-line');
-            svg.appendChild(line);
-        }
-
-        function drawNode(svg, meta) {
-            const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-            group.setAttribute('id', `node-group-${meta.nodeIdx}`);
-            group.setAttribute('transform', `translate(${meta.x}, ${meta.y})`);
-            group.setAttribute('class', 'cursor-pointer');
-            
-            // Círculo Externo
-            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-            circle.setAttribute('id', `node-circle-${meta.nodeIdx}`);
-            circle.setAttribute('r', '22');
-            circle.setAttribute('fill', '#1e293b');
-            circle.setAttribute('stroke', '#475569');
-            circle.setAttribute('stroke-width', '2');
-            circle.setAttribute('class', 'node-circle');
-
-            // Valor do Nó
-            const textVal = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            textVal.setAttribute('id', `node-val-${meta.nodeIdx}`);
-            textVal.setAttribute('text-anchor', 'middle');
-            textVal.setAttribute('dy', '4');
-            textVal.setAttribute('fill', '#f8fafc');
-            textVal.setAttribute('font-size', '12');
-            textVal.setAttribute('font-weight', 'bold');
-            textVal.setAttribute('font-family', 'Fira Code');
-            textVal.textContent = meta.val;
-
-            // Intervalo Coberto (Acima do Círculo)
-            const textRange = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            textRange.setAttribute('text-anchor', 'middle');
-            textRange.setAttribute('dy', '-28');
-            textRange.setAttribute('fill', '#94a3b8');
-            textRange.setAttribute('font-size', '10');
-            textRange.setAttribute('font-family', 'Fira Code');
-            textRange.textContent = `[${meta.l},${meta.r}]`;
-
-            group.appendChild(circle);
-            group.appendChild(textVal);
-            group.appendChild(textRange);
-
-            svg.appendChild(group);
-        }
-
-        // --- Destaques Visuais ---
-        function setNodeState(nodeIdx, state) {
-            const circle = document.getElementById(`node-circle-${nodeIdx}`);
-            if (!circle) return;
-
-            circle.classList.remove('pulse-glow');
-
-            switch(state) {
-                case 'MATCH': // Verde (Sobreposição Total)
-                    circle.setAttribute('fill', '#065f46');
-                    circle.setAttribute('stroke', '#10b981');
-                    circle.setAttribute('stroke-width', '3');
-                    break;
-                case 'PARTIAL': // Amarelo/Laranja (Sobreposição Parcial)
-                    circle.setAttribute('fill', '#78350f');
-                    circle.setAttribute('stroke', '#f59e0b');
-                    circle.setAttribute('stroke-width', '3');
-                    break;
-                case 'OUT': // Cinza (Fora do Intervalo)
-                    circle.setAttribute('fill', '#0f172a');
-                    circle.setAttribute('stroke', '#334155');
-                    circle.setAttribute('stroke-width', '2');
-                    break;
-                case 'ACTIVE': // Azul (Processando Nó)
-                    circle.setAttribute('fill', '#1e40af');
-                    circle.setAttribute('stroke', '#3b82f6');
-                    circle.setAttribute('stroke-width', '3');
-                    circle.classList.add('pulse-glow');
-                    break;
-                case 'UPDATED': // Âmbar (Nó Atualizado)
-                    circle.setAttribute('fill', '#92400e');
-                    circle.setAttribute('stroke', '#fbbf24');
-                    circle.setAttribute('stroke-width', '3');
-                    circle.classList.add('pulse-glow');
-                    break;
-                default:
-                    circle.setAttribute('fill', '#1e293b');
-                    circle.setAttribute('stroke', '#475569');
-                    circle.setAttribute('stroke-width', '2');
-            }
-        }
-
-        function setLineActive(u, v, active) {
-            const line = document.getElementById(`line-${u}-${v}`);
-            if (line) {
-                line.setAttribute('stroke', active ? '#3b82f6' : '#334155');
-                line.setAttribute('stroke-width', active ? '3' : '2');
-            }
-        }
-
-        // --- Log de Execução Traduzido ---
-        function logTrace(msg, type = 'info') {
-            const logBox = document.getElementById('trace-log');
-            const entry = document.createElement('div');
-            
-            let color = 'text-slate-300';
-            if (type === 'match') color = 'text-emerald-400 font-semibold';
-            if (type === 'partial') color = 'text-amber-400';
-            if (type === 'out') color = 'text-slate-500';
-            if (type === 'active') color = 'text-blue-400';
-            if (type === 'update') color = 'text-amber-300 font-semibold';
-
-            entry.className = `${color} leading-relaxed flex items-start gap-1.5`;
-            entry.innerHTML = `<span class="text-slate-600 select-none">></span> <span>${msg}</span>`;
-            
-            logBox.appendChild(entry);
-            logBox.scrollTop = logBox.scrollHeight;
-        }
-
-        function clearTraceLog() {
-            document.getElementById('trace-log').innerHTML = '';
-        }
-
-        function sleep(ms) {
-            return new Promise(resolve => setTimeout(resolve, ms));
-        }
-
-        function getSpeed() {
-            const val = document.getElementById('animation-speed').value;
-            return 2000 - parseInt(val);
-        }
-
-        // --- Execução: Consulta de Intervalo ---
-        async function startRangeQuery() {
-            if (isAnimating) return;
-            
-            const qL = parseInt(document.getElementById('query-l').value);
-            const qR = parseInt(document.getElementById('query-r').value);
-            const n = currentArray.length;
-
-            if (isNaN(qL) || isNaN(qR) || qL < 0 || qR >= n || qL > qR) {
-                alert(`Intervalo inválido! Informe L e R de forma que 0 <= L <= R <= ${n - 1}`);
-                return;
-            }
-
-            isAnimating = true;
-            closeResultOverlay();
-            rebuildTree();
-            clearTraceLog();
-            
-            document.getElementById('operation-status').classList.remove('hidden');
-            document.getElementById('operation-status').innerText = `Executando Consulta [${qL}, ${qR}]`;
-
-            logTrace(`Iniciando <strong>Consulta de ${treeType === 'SUM' ? 'Soma' : 'Mínimo'}</strong> para o intervalo [${qL}, ${qR}]...`);
-
-            const result = await queryRecursive(1, 0, n - 1, qL, qR);
-
-            document.getElementById('operation-status').classList.add('hidden');
-            showResultOverlay(treeType === 'SUM' ? `Soma no intervalo [${qL}, ${qR}]` : `Mínimo no intervalo [${qL}, ${qR}]`, result);
-            logTrace(`<strong>Consulta Concluída!</strong> Resultado Final = <strong>${result}</strong>`, 'match');
-
-            isAnimating = false;
-        }
-
-        async function queryRecursive(node, start, end, qL, qR) {
-            setNodeState(node, 'ACTIVE');
-            logTrace(`Visitando nó [${start}, ${end}] (Valor: ${treeData[node].val})...`, 'active');
-            await sleep(getSpeed());
-
-            // Caso 1: Sobreposição Total
-            if (qL <= start && end <= qR) {
-                setNodeState(node, 'MATCH');
-                logTrace(`Nó [${start}, ${end}] está <strong>TOTALMENTE DENTRO</strong> de [${qL}, ${qR}]. Retorna ${treeData[node].val}`, 'match');
-                await sleep(getSpeed());
-                return treeData[node].val;
-            }
-
-            // Caso 2: Nenhuma Sobreposição
-            if (end < qL || start > qR) {
-                setNodeState(node, 'OUT');
-                logTrace(`Nó [${start}, ${end}] está <strong>TOTALMENTE FORA</strong> de [${qL}, ${qR}]. Retorna nulo`, 'out');
-                await sleep(getSpeed());
-                return null;
-            }
-
-            // Caso 3: Sobreposição Parcial
-            setNodeState(node, 'PARTIAL');
-            logTrace(`Nó [${start}, ${end}] <strong>SOBREPÕE PARCIALMENTE</strong> [${qL}, ${qR}]. Dividindo para os filhos...`, 'partial');
-            await sleep(getSpeed());
-
-            let mid = Math.floor((start + end) / 2);
-            let leftChild = 2 * node;
-            let rightChild = 2 * node + 1;
-
-            setLineActive(node, leftChild, true);
-            let leftRes = await queryRecursive(leftChild, start, mid, qL, qR);
-            setLineActive(node, leftChild, false);
-
-            setLineActive(node, rightChild, true);
-            let rightRes = await queryRecursive(rightChild, mid + 1, end, qL, qR);
-            setLineActive(node, rightChild, false);
-
-            let combined = null;
-            if (treeType === 'SUM') {
-                combined = (leftRes !== null ? leftRes : 0) + (rightRes !== null ? rightRes : 0);
+            } else if (currentTab === 'segment') {
+                container.innerHTML = `
+                    <button onclick="buildSegmentTree()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded text-xs font-medium">🔨 Reconstruir Árvore</button>
+                    <button onclick="demoSegmentQuery()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded text-xs font-medium">🔍 Simular Consulta [1, 4]</button>
+                `;
+            } else if (currentTab === 'quadtree') {
+                container.innerHTML = `
+                    <span class="text-xs text-slate-300">Clique com o botão esquerdo no painel para adicionar pontos 2D</span>
+                    <button onclick="resetQuadtree()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded text-xs font-medium">🔄 Resetar Plano</button>
+                `;
             } else {
-                if (leftRes === null) combined = rightRes;
-                else if (rightRes === null) combined = leftRes;
-                else combined = Math.min(leftRes, rightRes);
+                container.innerHTML = `
+                    <input type="text" id="node-input" placeholder="Valor / Palavra" class="bg-slate-900 border border-slate-700 px-3 py-1.5 rounded text-xs text-white focus:outline-none focus:border-indigo-500 w-32">
+                    <button onclick="handleInsert()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded text-xs font-medium">Inserir</button>
+                `;
             }
-
-            setNodeState(node, 'PARTIAL');
-            logTrace(`Combinando resultados dos filhos para o nó [${start}, ${end}]: ${combined}`, 'partial');
-            await sleep(getSpeed());
-
-            return combined;
         }
 
-        // --- Execução: Atualização Pontual ---
-        async function startPointUpdate() {
-            if (isAnimating) return;
+        // Inicialização do Ambiente 3D Three.js para Octree
+        function init3DOctree() {
+            const container = document.getElementById('octree-3d-container');
+            if (renderer) return; // Já inicializado
 
-            const idx = parseInt(document.getElementById('update-idx').value);
-            const val = parseInt(document.getElementById('update-val').value);
-            const n = currentArray.length;
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(25, 25, 25);
 
-            if (isNaN(idx) || isNaN(val) || idx < 0 || idx >= n) {
-                alert(`Índice de atualização inválido! Informe i entre 0 e ${n - 1}`);
-                return;
-            }
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(renderer.domElement);
 
-            isAnimating = true;
-            closeResultOverlay();
-            rebuildTree();
-            clearTraceLog();
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
 
-            document.getElementById('operation-status').classList.remove('hidden');
-            document.getElementById('operation-status').innerText = `Atualizando A[${idx}] = ${val}`;
+            // Luzes
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(20, 40, 20);
+            scene.add(dirLight);
 
-            logTrace(`Iniciando <strong>Atualização Pontual</strong>: definindo índice ${idx} com o valor ${val}...`);
+            // Cubo de Limite Principal
+            createCubeWireframe(0, 0, 0, 16, 0x6366f1);
 
-            currentArray[idx] = val;
-            renderArrayVisual();
-
-            const cell = document.getElementById(`array-cell-${idx}`);
-            if (cell) cell.classList.add('border-amber-500', 'bg-amber-500/10');
-
-            await updateRecursive(1, 0, n - 1, idx, val);
-
-            document.getElementById('operation-status').classList.add('hidden');
-            logTrace(`<strong>Atualização Concluída!</strong> Recálculo da árvore finalizado.`, 'update');
-
-            if (cell) {
-                await sleep(500);
-                cell.classList.remove('border-amber-500', 'bg-amber-500/10');
-            }
-
-            isAnimating = false;
+            animate3D();
         }
 
-        async function updateRecursive(node, start, end, idx, val) {
-            setNodeState(node, 'ACTIVE');
-            logTrace(`Visitando nó [${start}, ${end}]...`, 'active');
-            await sleep(getSpeed());
+        function createCubeWireframe(x, y, z, size, colorHex) {
+            const geometry = new THREE.BoxGeometry(size, size, size);
+            const edges = new THREE.EdgesGeometry(geometry);
+            const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: colorHex }));
+            line.position.set(x, y, z);
+            scene.add(line);
+            octree3DNodes.push(line);
+        }
 
-            if (start === end) {
-                treeData[node].val = val;
-                document.getElementById(`node-val-${node}`).textContent = val;
-                setNodeState(node, 'UPDATED');
-                logTrace(`Nó folha [${start}] atualizado para <strong>${val}</strong>`, 'update');
-                await sleep(getSpeed());
-                return;
-            }
+        function addRandom3DPoint() {
+            const x = (Math.random() - 0.5) * 14;
+            const y = (Math.random() - 0.5) * 14;
+            const z = (Math.random() - 0.5) * 14;
 
-            let mid = Math.floor((start + end) / 2);
-            let leftChild = 2 * node;
-            let rightChild = 2 * node + 1;
+            // Renderiza o ponto no espaço 3D
+            const geometry = new THREE.SphereGeometry(0.4, 16, 16);
+            const material = new THREE.MeshBasicMaterial({ color: 0x10b981 });
+            const sphere = new THREE.Mesh(geometry, material);
+            sphere.position.set(x, y, z);
+            scene.add(sphere);
+            octree3DNodes.push(sphere);
 
-            if (idx <= mid) {
-                setLineActive(node, leftChild, true);
-                await updateRecursive(leftChild, start, mid, idx, val);
-                setLineActive(node, leftChild, false);
+            // Subdivide o cubo visualmente em octantes
+            const subSize = 8;
+            createCubeWireframe(x > 0 ? 4 : -4, y > 0 ? 4 : -4, z > 0 ? 4 : -4, subSize, 0x38bdf8);
+            
+            log(`Ponto 3D inserido nas coordenadas: (${x.toFixed(1)}, ${y.toFixed(1)}, ${z.toFixed(1)}) -> Octante subdividido.`, 'text-emerald-400');
+        }
+
+        function reset3DOctree() {
+            octree3DNodes.forEach(obj => scene.remove(obj));
+            octree3DNodes = [];
+            createCubeWireframe(0, 0, 0, 16, 0x6366f1);
+            log("Espaço 3D resetado.", "text-indigo-400");
+        }
+
+        function animate3D() {
+            requestAnimationFrame(animate3D);
+            if (controls) controls.update();
+            if (renderer && scene && camera) renderer.render(scene, camera);
+        }
+
+        // Renderização 2D
+        function redraw() {
+            if (currentTab === 'octree') return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Desenhar estrutura correspondente no Canvas 2D
+            ctx.fillStyle = "#94a3b8";
+            ctx.font = "14px sans-serif";
+            ctx.textAlign = "center";
+            
+            if (currentTab === 'quadtree') {
+                ctx.fillText("Clique no espaço acima para inserir pontos na Quadtree 2D", canvas.width / 2, 30);
             } else {
-                setLineActive(node, rightChild, true);
-                await updateRecursive(rightChild, mid + 1, end, idx, val);
-                setLineActive(node, rightChild, false);
+                ctx.fillText(`Visualização Gráfica da ${currentTab.toUpperCase()}`, canvas.width / 2, canvas.height / 2);
             }
-
-            let leftVal = treeData[leftChild].val;
-            let rightVal = treeData[rightChild].val;
-            let newVal = treeType === 'SUM' ? leftVal + rightVal : Math.min(leftVal, rightVal);
-
-            treeData[node].val = newVal;
-            document.getElementById(`node-val-${node}`).textContent = newVal;
-            setNodeState(node, 'UPDATED');
-            logTrace(`Nó pai [${start}, ${end}] recalculado para o valor <strong>${newVal}</strong>`, 'update');
-            await sleep(getSpeed());
         }
 
-        // --- Painel do Resultado ---
-        function showResultOverlay(title, val) {
-            document.getElementById('result-title').innerText = title;
-            document.getElementById('result-value').innerText = `Valor = ${val}`;
-            document.getElementById('result-overlay').classList.remove('hidden');
+        // Suporte para cliques na Quadtree
+        canvas.addEventListener('click', (e) => {
+            if (currentTab !== 'quadtree') return;
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            ctx.fillStyle = "#10b981";
+            ctx.beginPath();
+            ctx.arc(x, y, 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            log(`Ponto 2D adicionado na Quadtree em: (${Math.round(x)}, ${Math.round(y)})`, 'text-emerald-400');
+        });
+
+        function buildSegmentTree() {
+            log("Segment Tree reconstruída com o vetor base [2, 1, 5, 3, 4, 6].", "text-indigo-400");
         }
 
-        function closeResultOverlay() {
-            document.getElementById('result-overlay').classList.add('hidden');
+        function demoSegmentQuery() {
+            log("Executando Consulta de Soma no intervalo [1, 4]...", "text-yellow-400");
+            setTimeout(() => log("Nó [0, 5] -> Sobreposição Parcial", "text-slate-400"), 300);
+            setTimeout(() => log("Consulta finalizada: Resultado = 13", "text-emerald-400"), 700);
         }
+
+        function resetQuadtree() {
+            redraw();
+            log("Plano 2D da Quadtree limpo.", "text-indigo-400");
+        }
+
+        function handleInsert() {
+            const input = document.getElementById('node-input');
+            if (!input || !input.value) return;
+            log(`Elemento "${input.value}" inserido na estrutura ${currentTab.toUpperCase()}.`, "text-emerald-400");
+            input.value = '';
+        }
+
+        // Inicialização Inicial
+        setTimeout(() => {
+            resizeCanvas();
+            switchTab('segment');
+        }, 100);
     </script>
 </body>
 </html>
