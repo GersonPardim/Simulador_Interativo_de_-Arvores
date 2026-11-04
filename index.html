@@ -3,391 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Super Simulador de Estruturas de Dados em Árvore - AEDS II</title>
+    <title>Simulador de Árvores - AEDS II (UFOP)</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Three.js para Renderização 3D da Octree -->
+    <!-- Three.js & OrbitControls para Octree 3D -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <!-- OrbitControls para controle de câmera 3D -->
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <style>
         .glass {
-            background: rgba(30, 41, 59, 0.7);
+            background: rgba(15, 23, 42, 0.75);
             backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.08);
         }
-        canvas {
-            display: block;
+        svg text {
+            user-select: none;
         }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans">
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased">
 
-    <!-- Header -->
-    <header class="bg-slate-900 border-b border-slate-800 p-4 shadow-lg flex justify-between items-center">
+    <!-- Header Principal -->
+    <header class="bg-slate-900 border-b border-slate-800 px-6 py-3 shadow-md flex justify-between items-center">
         <div>
-            <h1 class="text-2xl font-bold text-indigo-400">Super Simulador de Árvores</h1>
-            <p class="text-xs text-slate-400">Ferramenta Interativa de Visualização para AEDS II - UFOP</p>
+            <h1 class="text-xl font-bold text-indigo-400 tracking-tight">Simulador de Árvores</h1>
+            <p class="text-xs text-slate-400">Ferramenta Interativa de Visualização de Estruturas de Dados</p>
         </div>
-        <div class="text-right">
-            <span class="text-xs bg-indigo-900/50 text-indigo-300 px-3 py-1 rounded-full border border-indigo-700/50">Ambiente de Testes Acadêmico</span>
+        <div>
+            <span class="text-xs font-semibold bg-indigo-950/70 text-indigo-300 px-3 py-1 rounded-full border border-indigo-800/50 shadow-inner">
+                Ambiente de Testes Acadêmico — AEDS II (UFOP)
+            </span>
         </div>
     </header>
 
-    <!-- Menu de Navegação por Abas -->
-    <nav class="bg-slate-900/80 border-b border-slate-800 px-4 pt-3 flex gap-2 overflow-x-auto">
-        <button onclick="switchTab('segment')" id="tab-segment" class="tab-btn px-4 py-2 rounded-t-lg font-medium text-sm transition-all bg-indigo-600 text-white">Segment Tree</button>
-        <button onclick="switchTab('rb')" id="tab-rb" class="tab-btn px-4 py-2 rounded-t-lg font-medium text-sm transition-all bg-slate-800 text-slate-400 hover:text-white">Rubro-Negra</button>
-        <button onclick="switchTab('patricia')" id="tab-patricia" class="tab-btn px-4 py-2 rounded-t-lg font-medium text-sm transition-all bg-slate-800 text-slate-400 hover:text-white">PATRICIA Trie</button>
-        <button onclick="switchTab('quadtree')" id="tab-quadtree" class="tab-btn px-4 py-2 rounded-t-lg font-medium text-sm transition-all bg-slate-800 text-slate-400 hover:text-white">Quadtree (2D)</button>
-        <button onclick="switchTab('octree')" id="tab-octree" class="tab-btn px-4 py-2 rounded-t-lg font-medium text-sm transition-all bg-slate-800 text-slate-400 hover:text-white">Octree (3D Interativa)</button>
-        <button onclick="switchTab('trie')" id="tab-trie" class="tab-btn px-4 py-2 rounded-t-lg font-medium text-sm transition-all bg-slate-800 text-slate-400 hover:text-white">Trie</button>
-        <button onclick="switchTab('radix')" id="tab-radix" class="tab-btn px-4 py-2 rounded-t-lg font-medium text-sm transition-all bg-slate-800 text-slate-400 hover:text-white">Radix Tree</button>
+    <!-- Navegação por Abas -->
+    <nav class="bg-slate-900/90 border-b border-slate-800 px-4 pt-3 flex gap-1.5 overflow-x-auto">
+        <button onclick="switchTab('segment')" id="tab-segment" class="tab-btn px-4 py-2 rounded-t-lg font-medium text-xs transition-all bg-indigo-600 text-white shadow">Segment Tree</button>
+        <button onclick="switchTab('rb')" id="tab-rb" class="tab-btn px-4 py-2 rounded-t-lg font-medium text-xs transition-all bg-slate-800 text-slate-400 hover:text-slate-200">Rubro-Negra</button>
+        <button onclick="switchTab('patricia')" id="tab-patricia" class="tab-btn px-4 py-2 rounded-t-lg font-medium text-xs transition-all bg-slate-800 text-slate-400 hover:text-slate-200">PATRICIA Trie</button>
+        <button onclick="switchTab('quadtree')" id="tab-quadtree" class="tab-btn px-4 py-2 rounded-t-lg font-medium text-xs transition-all bg-slate-800 text-slate-400 hover:text-slate-200">Quadtree (2D)</button>
+        <button onclick="switchTab('octree')" id="tab-octree" class="tab-btn px-4 py-2 rounded-t-lg font-medium text-xs transition-all bg-slate-800 text-slate-400 hover:text-slate-200">Octree (3D)</button>
+        <button onclick="switchTab('trie')" id="tab-trie" class="tab-btn px-4 py-2 rounded-t-lg font-medium text-xs transition-all bg-slate-800 text-slate-400 hover:text-slate-200">Trie</button>
+        <button onclick="switchTab('radix')" id="tab-radix" class="tab-btn px-4 py-2 rounded-t-lg font-medium text-xs transition-all bg-slate-800 text-slate-400 hover:text-slate-200">Radix Tree</button>
     </nav>
 
-    <!-- Conteúdo Principal -->
-    <div class="flex-1 flex flex-col md:flex-row overflow-hidden">
+    <!-- Conteúdo da Aplicação -->
+    <div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
         
-        <!-- Área Visual e Painel de Controle -->
-        <main class="flex-1 flex flex-col p-4 gap-4 overflow-y-auto">
+        <!-- Área Principal de Simulação -->
+        <main class="flex-1 flex flex-col p-4 gap-3 overflow-hidden">
             
-            <!-- Painel de Controles Dinâmicos -->
-            <div class="glass p-4 rounded-xl flex flex-wrap gap-4 items-center justify-between shadow-md">
-                <div id="controls-container" class="flex flex-wrap gap-3 items-center">
-                    <!-- Controles inseridos via JavaScript conforme a aba -->
+            <!-- Painel de Controles Interativos -->
+            <div class="glass p-3 rounded-xl flex flex-wrap gap-3 items-center justify-between shadow-lg">
+                <div id="controls-container" class="flex flex-wrap gap-2 items-center">
+                    <!-- Gerado dinamicamente via JS -->
                 </div>
-                <div class="flex items-center gap-2">
-                    <label class="text-xs text-slate-400">Velocidade:</label>
-                    <input type="range" id="speed-range" min="100" max="1500" value="700" class="accent-indigo-500 w-24">
+                <div class="flex items-center gap-2 text-xs text-slate-400 border-l border-slate-800 pl-3">
+                    <label>Velocidade:</label>
+                    <input type="range" id="speed-range" min="100" max="1500" value="700" class="accent-indigo-500 w-20 cursor-pointer">
                 </div>
             </div>
 
-            <!-- Palco de Visualização (Canvas / 3D Container) -->
-            <div class="flex-1 glass rounded-xl relative min-h-[450px] flex items-center justify-center overflow-hidden border border-slate-800">
+            <!-- Palco Visual (SVG / Canvas 2D / Container 3D) -->
+            <div class="flex-1 glass rounded-xl relative min-h-[400px] flex items-center justify-center overflow-hidden border border-slate-800/80 shadow-2xl">
                 
-                <!-- Canvas 2D Genérico -->
-                <canvas id="main-canvas" class="w-full h-full absolute inset-0"></canvas>
+                <!-- Renderizador SVG (Para Árvores Binárias e Tries) -->
+                <svg id="svg-stage" class="w-full h-full absolute inset-0 hidden"></svg>
+
+                <!-- Canvas 2D (Para Quadtree) -->
+                <canvas id="canvas-2d" class="w-full h-full absolute inset-0 hidden"></canvas>
                 
-                <!-- Container 3D para a Octree -->
+                <!-- Canvas 3D (Para Octree) -->
                 <div id="octree-3d-container" class="w-full h-full absolute inset-0 hidden"></div>
 
-                <!-- Overlay de Instruções em 3D -->
-                <div id="octree-overlay" class="absolute top-3 left-3 bg-slate-900/80 px-3 py-1.5 rounded text-xs text-slate-300 border border-slate-700 hidden">
-                    💡 <b>Controles 3D:</b> Clique e arraste para girar a Octree | Scroll para Zoom
+                <!-- Dica de Câmera 3D -->
+                <div id="octree-overlay" class="absolute top-3 left-3 bg-slate-950/80 backdrop-blur px-3 py-1.5 rounded-lg text-xs text-slate-300 border border-slate-800 hidden shadow">
+                    💡 <b>Controles 3D:</b> Clique e arraste para girar | Scroll para Zoom
                 </div>
             </div>
 
-            <!-- Terminal de Logs de Execução -->
-            <div class="glass p-3 rounded-xl h-32 overflow-y-auto font-mono text-xs text-slate-300 flex flex-col gap-1 border border-slate-800" id="trace-log">
-                <div class="text-indigo-400">▶ Simulador pronto. Selecione uma estrutura no menu superior para começar.</div>
+            <!-- Terminal de Log de Execução -->
+            <div class="glass p-3 rounded-xl h-28 overflow-y-auto font-mono text-xs text-slate-300 flex flex-col gap-1 border border-slate-800/80 shadow-inner" id="trace-log">
+                <div class="text-indigo-400">▶ Simulador de Árvores carregado com sucesso. Selecione uma estrutura para iniciar.</div>
             </div>
         </main>
 
-        <!-- Sidebar Informativa / Teórica -->
-        <aside class="w-full md:w-80 bg-slate-900/90 border-l border-slate-800 p-4 flex flex-col gap-4 overflow-y-auto">
+        <!-- Sidebar Teórica -->
+        <aside class="w-full lg:w-80 bg-slate-900/80 border-l border-slate-800 p-4 flex flex-col gap-3 overflow-y-auto shadow-xl">
             <div>
-                <h2 id="theory-title" class="text-lg font-bold text-indigo-300">Segment Tree</h2>
+                <h2 id="theory-title" class="text-base font-bold text-indigo-300">Segment Tree</h2>
                 <span id="theory-category" class="text-xs text-slate-400">Árvore de Intervalos</span>
             </div>
 
-            <div class="space-y-3 text-xs text-slate-300">
-                <div class="bg-slate-800/60 p-3 rounded-lg border border-slate-700/50">
+            <div class="space-y-3 text-xs">
+                <div class="bg-slate-950/50 p-3 rounded-lg border border-slate-800">
                     <h3 class="font-semibold text-indigo-400 mb-1">Complexidade</h3>
-                    <p id="theory-complexity">Busca/Update: O(log n) | Espaço: O(n)</p>
-                </div>
-
-                <div class="bg-slate-800/60 p-3 rounded-lg border border-slate-700/50">
-                    <h3 class="font-semibold text-indigo-400 mb-1">Descrição Teórica</h3>
-                    <p id="theory-description">Estrutura binária construída sobre um vetor para realizar consultas de intervalo e atualizações pontuais em tempo logarítmico.</p>
-                </div>
-
-                <div class="bg-slate-800/60 p-3 rounded-lg border border-slate-700/50">
-                    <h3 class="font-semibold text-indigo-400 mb-1">Aplicações Práticas</h3>
-                    <p id="theory-applications">Processamento de dados temporais, geometria computacional, jogos e sistemas de consulta frequente.</p>
-                </div>
-            </div>
-        </aside>
-    </div>
-
-    <!-- Script de Lógica do Simulador -->
-    <script>
-        let currentTab = 'segment';
-        const canvas = document.getElementById('main-canvas');
-        const ctx = canvas.getContext('2d');
-        const logContainer = document.getElementById('trace-log');
-
-        // Variáveis do Three.js para Octree 3D
-        let scene, camera, renderer, controls;
-        let octree3DNodes = [];
-
-        // Redimensionar Canvas
-        function resizeCanvas() {
-            canvas.width = canvas.parentElement.clientWidth;
-            canvas.height = canvas.parentElement.clientHeight;
-            if (renderer) {
-                renderer.setSize(canvas.parentElement.clientWidth, canvas.parentElement.clientHeight);
-                camera.aspect = canvas.parentElement.clientWidth / canvas.parentElement.clientHeight;
-                camera.updateProjectionMatrix();
-            }
-            redraw();
-        }
-        window.addEventListener('resize', resizeCanvas);
-
-        function log(msg, color = 'text-slate-300') {
-            const div = document.createElement('div');
-            div.className = color;
-            div.innerHTML = `> ${msg}`;
-            logContainer.appendChild(div);
-            logContainer.scrollTop = logContainer.scrollHeight;
-        }
-
-        // Alternância de Abas
-        function switchTab(tab) {
-            currentTab = tab;
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.className = "tab-btn px-4 py-2 rounded-t-lg font-medium text-sm transition-all bg-slate-800 text-slate-400 hover:text-white";
-            });
-            document.getElementById(`tab-${tab}`).className = "tab-btn px-4 py-2 rounded-t-lg font-medium text-sm transition-all bg-indigo-600 text-white";
-
-            const octreeContainer = document.getElementById('octree-3d-container');
-            const octreeOverlay = document.getElementById('octree-overlay');
-            
-            if (tab === 'octree') {
-                canvas.classList.add('hidden');
-                octreeContainer.classList.remove('hidden');
-                octreeOverlay.classList.remove('hidden');
-                init3DOctree();
-            } else {
-                canvas.classList.remove('hidden');
-                octreeContainer.classList.add('hidden');
-                octreeOverlay.classList.add('hidden');
-            }
-
-            setupControls();
-            updateTheory();
-            redraw();
-        }
-
-        // Atualização da Sidebar Teórica
-        function updateTheory() {
-            const data = {
-                segment: {
-                    title: "Segment Tree",
-                    cat: "Árvore de Intervalos",
-                    comp: "Consulta: O(log n) | Update: O(log n) | Espaço: O(n)",
-                    desc: "Divide um vetor em sub-intervalos recursivos ao meio. Permite consultar somas, mínimos e máximos em tempo logarítmico.",
-                    apps: "Sistemas de séries temporais, jogos e processamento de imagens."
-                },
-                rb: {
-                    title: "Árvore Rubro-Negra (Red-Black)",
-                    cat: "Árvore Binária de Busca Balanceada",
-                    comp: "Busca/Inserção/Remoção: O(log n) | Espaço: O(n)",
-                    desc: "Garante balanceamento dinâmico utilizando uma propriedade de cores (vermelho/preto) nos nós e rotações.",
-                    apps: "Implementação da std::map em C++ e tabelas de símbolos em compiladores."
-                },
-                patricia: {
-                    title: "PATRICIA Trie",
-                    cat: "Trie Compactada por Bit",
-                    comp: "Busca/Inserção: O(K) onde K é o tamanho da chave | Espaço: O(N)",
-                    desc: "Trie binária compactada que pula testes de bits que não ramificam a árvore (skip-bits).",
-                    apps: "Roteamento de redes IP e dicionários compactos de chaves numéricas."
-                },
-                quadtree: {
-                    title: "Quadtree (2D)",
-                    cat: "Divisão Espacial Bidimensional",
-                    comp: "Busca/Inserção: O(log n) médio | Espaço: O(n)",
-                    desc: "Subdivide recursivamente um plano 2D em 4 quadrantes (NW, NE, SW, SE) quando a capacidade do nó é excedida.",
-                    apps: "Detecção de colisão 2D, motores de jogos e mapas cartográficos."
-                },
-                octree: {
-                    title: "Octree (3D Interativa)",
-                    cat: "Divisão Espacial Tridimensional",
-                    comp: "Busca/Inserção: O(log n) médio | Espaço: O(n)",
-                    desc: "Subdivide o espaço 3D em 8 octantes recursivos (4 frontais e 4 traseiros). É a evolução natural da Quadtree para o espaço 3D.",
-                    apps: "Motores de jogos 3D (Unity/Unreal), renderização de névoa e simulação física volumétrica."
-                },
-                trie: {
-                    title: "Trie Convencional",
-                    cat: "Árvore de Prefixos",
-                    comp: "Busca/Inserção: O(L) onde L é o comprimento do texto | Espaço: O(ALPHABET_SIZE * N * L)",
-                    desc: "Guarda caracteres das palavras em nós ao longo do caminho, facilitando a busca por prefixos comuns.",
-                    apps: "Autocompletar de buscas, verificadores ortográficos e corretores automáticos."
-                },
-                radix: {
-                    title: "Radix Tree (Compressed Trie)",
-                    cat: "Trie de Prefixos Compactada",
-                    comp: "Busca/Inserção: O(L) | Espaço: O(N)",
-                    desc: "Agrupa nós consecutivos de filho único que compartilham o mesmo prefixo numa única aresta compacta.",
-                    apps: "Roteamento de URLs de servidores web (Ex: Gin/Go, Fastify) e indexadores de busca."
-                }
-            };
-
-            const info = data[currentTab];
-            document.getElementById('theory-title').innerText = info.title;
-            document.getElementById('theory-category').innerText = info.cat;
-            document.getElementById('theory-complexity').innerText = info.comp;
-            document.getElementById('theory-description').innerText = info.desc;
-            document.getElementById('theory-applications').innerText = info.apps;
-        }
-
-        // Configuração de Controles no Painel Superior
-        function setupControls() {
-            const container = document.getElementById('controls-container');
-            container.innerHTML = '';
-
-            if (currentTab === 'octree') {
-                container.innerHTML = `
-                    <button onclick="addRandom3DPoint()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded text-xs font-medium">➕ Inserir Ponto 3D Aleatório</button>
-                    <button onclick="reset3DOctree()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded text-xs font-medium">🔄 Limpar Espaço 3D</button>
-                `;
-            } else if (currentTab === 'segment') {
-                container.innerHTML = `
-                    <button onclick="buildSegmentTree()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded text-xs font-medium">🔨 Reconstruir Árvore</button>
-                    <button onclick="demoSegmentQuery()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded text-xs font-medium">🔍 Simular Consulta [1, 4]</button>
-                `;
-            } else if (currentTab === 'quadtree') {
-                container.innerHTML = `
-                    <span class="text-xs text-slate-300">Clique com o botão esquerdo no painel para adicionar pontos 2D</span>
-                    <button onclick="resetQuadtree()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded text-xs font-medium">🔄 Resetar Plano</button>
-                `;
-            } else {
-                container.innerHTML = `
-                    <input type="text" id="node-input" placeholder="Valor / Palavra" class="bg-slate-900 border border-slate-700 px-3 py-1.5 rounded text-xs text-white focus:outline-none focus:border-indigo-500 w-32">
-                    <button onclick="handleInsert()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded text-xs font-medium">Inserir</button>
-                `;
-            }
-        }
-
-        // Inicialização do Ambiente 3D Three.js para Octree
-        function init3DOctree() {
-            const container = document.getElementById('octree-3d-container');
-            if (renderer) return; // Já inicializado
-
-            scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
-            camera.position.set(25, 25, 25);
-
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            renderer.setSize(container.clientWidth, container.clientHeight);
-            container.appendChild(renderer.domElement);
-
-            controls = new THREE.OrbitControls(camera, renderer.domElement);
-            controls.enableDamping = true;
-
-            // Luzes
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-            scene.add(ambientLight);
-            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            dirLight.position.set(20, 40, 20);
-            scene.add(dirLight);
-
-            // Cubo de Limite Principal
-            createCubeWireframe(0, 0, 0, 16, 0x6366f1);
-
-            animate3D();
-        }
-
-        function createCubeWireframe(x, y, z, size, colorHex) {
-            const geometry = new THREE.BoxGeometry(size, size, size);
-            const edges = new THREE.EdgesGeometry(geometry);
-            const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: colorHex }));
-            line.position.set(x, y, z);
-            scene.add(line);
-            octree3DNodes.push(line);
-        }
-
-        function addRandom3DPoint() {
-            const x = (Math.random() - 0.5) * 14;
-            const y = (Math.random() - 0.5) * 14;
-            const z = (Math.random() - 0.5) * 14;
-
-            // Renderiza o ponto no espaço 3D
-            const geometry = new THREE.SphereGeometry(0.4, 16, 16);
-            const material = new THREE.MeshBasicMaterial({ color: 0x10b981 });
-            const sphere = new THREE.Mesh(geometry, material);
-            sphere.position.set(x, y, z);
-            scene.add(sphere);
-            octree3DNodes.push(sphere);
-
-            // Subdivide o cubo visualmente em octantes
-            const subSize = 8;
-            createCubeWireframe(x > 0 ? 4 : -4, y > 0 ? 4 : -4, z > 0 ? 4 : -4, subSize, 0x38bdf8);
-            
-            log(`Ponto 3D inserido nas coordenadas: (${x.toFixed(1)}, ${y.toFixed(1)}, ${z.toFixed(1)}) -> Octante subdividido.`, 'text-emerald-400');
-        }
-
-        function reset3DOctree() {
-            octree3DNodes.forEach(obj => scene.remove(obj));
-            octree3DNodes = [];
-            createCubeWireframe(0, 0, 0, 16, 0x6366f1);
-            log("Espaço 3D resetado.", "text-indigo-400");
-        }
-
-        function animate3D() {
-            requestAnimationFrame(animate3D);
-            if (controls) controls.update();
-            if (renderer && scene && camera) renderer.render(scene, camera);
-        }
-
-        // Renderização 2D
-        function redraw() {
-            if (currentTab === 'octree') return;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Desenhar estrutura correspondente no Canvas 2D
-            ctx.fillStyle = "#94a3b8";
-            ctx.font = "14px sans-serif";
-            ctx.textAlign = "center";
-            
-            if (currentTab === 'quadtree') {
-                ctx.fillText("Clique no espaço acima para inserir pontos na Quadtree 2D", canvas.width / 2, 30);
-            } else {
-                ctx.fillText(`Visualização Gráfica da ${currentTab.toUpperCase()}`, canvas.width / 2, canvas.height / 2);
-            }
-        }
-
-        // Suporte para cliques na Quadtree
-        canvas.addEventListener('click', (e) => {
-            if (currentTab !== 'quadtree') return;
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-
-            ctx.fillStyle = "#10b981";
-            ctx.beginPath();
-            ctx.arc(x, y, 5, 0, Math.PI * 2);
-            ctx.fill();
-
-            log(`Ponto 2D adicionado na Quadtree em: (${Math.round(x)}, ${Math.round(y)})`, 'text-emerald-400');
-        });
-
-        function buildSegmentTree() {
-            log("Segment Tree reconstruída com o vetor base [2, 1, 5, 3, 4, 6].", "text-indigo-400");
-        }
-
-        function demoSegmentQuery() {
-            log("Executando Consulta de Soma no intervalo [1, 4]...", "text-yellow-400");
-            setTimeout(() => log("Nó [0, 5] -> Sobreposição Parcial", "text-slate-400"), 300);
-            setTimeout(() => log("Consulta finalizada: Resultado = 13", "text-emerald-400"), 700);
-        }
-
-        function resetQuadtree() {
-            redraw();
-            log("Plano 2D da Quadtree limpo.", "text-indigo-400");
-        }
-
-        function handleInsert() {
-            const input = document.getElementById('node-input');
-            if (!input || !input.value) return;
-            log(`Elemento "${input.value}" inserido na estrutura ${currentTab.toUpperCase()}.`, "text-emerald-400");
-            input.value = '';
-        }
-
-        // Inicialização Inicial
-        setTimeout(() => {
-            resizeCanvas();
-            switchTab('segment');
-        }, 100);
-    </script>
-</body>
-</html>
+                    <p id="theory-
