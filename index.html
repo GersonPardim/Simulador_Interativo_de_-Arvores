@@ -4,97 +4,312 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Simulador de Árvores - AEDS II (UFOP)</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Three.js & OrbitControls para Octree 3D -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <style>
-        .glass {
-            background: rgba(15, 23, 42, 0.75);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-        }
-        svg text {
-            user-select: none;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+        body { background-color: #090d16; color: #f1f5f9; min-height: 100vh; display: flex; flex-direction: column; }
+        
+        header { background: #0f172a; padding: 12px 24px; border-bottom: 1px solid #1e293b; display: flex; justify-content: space-between; align-items: center; }
+        header h1 { font-size: 1.25rem; color: #818cf8; }
+        header p { font-size: 0.75rem; color: #94a3b8; }
+        .tag-ufop { background: rgba(99, 102, 241, 0.15); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.3); padding: 4px 12px; border-radius: 999px; font-size: 0.75rem; }
+
+        nav { background: #0f172a; border-bottom: 1px solid #1e293b; padding: 8px 16px 0; display: flex; gap: 6px; overflow-x: auto; }
+        .tab-btn { background: #1e293b; color: #94a3b8; border: none; padding: 8px 16px; border-radius: 8px 8px 0 0; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .tab-btn:hover { color: #f8fafc; background: #334155; }
+        .tab-btn.active { background: #4f46e5; color: #ffffff; }
+
+        .main-container { flex: 1; display: flex; flex-direction: row; overflow: hidden; }
+        main { flex: 1; display: flex; flex-direction: column; padding: 16px; gap: 12px; overflow: hidden; }
+        
+        .controls-bar { background: #1e293b; padding: 10px 16px; border-radius: 12px; border: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .control-group { display: flex; items-center; gap: 8px; }
+        
+        input, button { font-size: 0.8rem; padding: 6px 12px; border-radius: 6px; }
+        input[type="number"], input[type="text"] { background: #0f172a; border: 1px solid #475569; color: #fff; width: 60px; text-align: center; }
+        input[type="text"] { width: 140px; text-align: left; }
+        .btn-action { background: #4f46e5; color: white; border: none; font-weight: 600; cursor: pointer; }
+        .btn-action:hover { background: #4338ca; }
+        .btn-success { background: #059669; color: white; border: none; font-weight: 600; cursor: pointer; }
+        .btn-success:hover { background: #047857; }
+        .btn-reset { background: #334155; color: #e2e8f0; border: 1px solid #475569; cursor: pointer; }
+
+        .stage-box { flex: 1; background: #0f172a; border-radius: 12px; border: 1px solid #1e293b; position: relative; overflow: hidden; min-h: 380px; display: flex; align-items: center; justify-content: center; }
+        svg, canvas { width: 100%; height: 100%; position: absolute; inset: 0; }
+        
+        .log-terminal { background: #0f172a; border-radius: 12px; border: 1px solid #1e293b; height: 110px; padding: 10px; font-family: monospace; font-size: 0.75rem; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+        
+        aside { width: 300px; background: #0f172a; border-left: 1px solid #1e293b; padding: 16px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
+        .info-card { background: #1e293b; padding: 12px; border-radius: 8px; border: 1px solid #334155; font-size: 0.75rem; }
+        .info-card h3 { color: #818cf8; margin-bottom: 4px; font-size: 0.8rem; }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased">
+<body>
 
-    <!-- Header Principal -->
-    <header class="bg-slate-900 border-b border-slate-800 px-6 py-3 shadow-md flex justify-between items-center">
+    <header>
         <div>
-            <h1 class="text-xl font-bold text-indigo-400 tracking-tight">Simulador de Árvores</h1>
-            <p class="text-xs text-slate-400">Ferramenta Interativa de Visualização de Estruturas de Dados</p>
+            <h1>Simulador de Árvores</h1>
+            <p>Ferramenta Interativa de Visualização de Estruturas de Dados</p>
         </div>
-        <div>
-            <span class="text-xs font-semibold bg-indigo-950/70 text-indigo-300 px-3 py-1 rounded-full border border-indigo-800/50 shadow-inner">
-                Ambiente de Testes Acadêmico — AEDS II (UFOP)
-            </span>
-        </div>
+        <span class="tag-ufop">Ambiente de Testes Acadêmico — AEDS II (UFOP)</span>
     </header>
 
-    <!-- Navegação por Abas -->
-    <nav class="bg-slate-900/90 border-b border-slate-800 px-4 pt-3 flex gap-1.5 overflow-x-auto">
-        <button onclick="switchTab('segment')" id="tab-segment" class="tab-btn px-4 py-2 rounded-t-lg font-medium text-xs transition-all bg-indigo-600 text-white shadow">Segment Tree</button>
-        <button onclick="switchTab('rb')" id="tab-rb" class="tab-btn px-4 py-2 rounded-t-lg font-medium text-xs transition-all bg-slate-800 text-slate-400 hover:text-slate-200">Rubro-Negra</button>
-        <button onclick="switchTab('patricia')" id="tab-patricia" class="tab-btn px-4 py-2 rounded-t-lg font-medium text-xs transition-all bg-slate-800 text-slate-400 hover:text-slate-200">PATRICIA Trie</button>
-        <button onclick="switchTab('quadtree')" id="tab-quadtree" class="tab-btn px-4 py-2 rounded-t-lg font-medium text-xs transition-all bg-slate-800 text-slate-400 hover:text-slate-200">Quadtree (2D)</button>
-        <button onclick="switchTab('octree')" id="tab-octree" class="tab-btn px-4 py-2 rounded-t-lg font-medium text-xs transition-all bg-slate-800 text-slate-400 hover:text-slate-200">Octree (3D)</button>
-        <button onclick="switchTab('trie')" id="tab-trie" class="tab-btn px-4 py-2 rounded-t-lg font-medium text-xs transition-all bg-slate-800 text-slate-400 hover:text-slate-200">Trie</button>
-        <button onclick="switchTab('radix')" id="tab-radix" class="tab-btn px-4 py-2 rounded-t-lg font-medium text-xs transition-all bg-slate-800 text-slate-400 hover:text-slate-200">Radix Tree</button>
+    <nav>
+        <button onclick="switchTab('segment')" id="tab-segment" class="tab-btn active">Segment Tree</button>
+        <button onclick="switchTab('rb')" id="tab-rb" class="tab-btn">Rubro-Negra</button>
+        <button onclick="switchTab('patricia')" id="tab-patricia" class="tab-btn">PATRICIA Trie</button>
+        <button onclick="switchTab('quadtree')" id="tab-quadtree" class="tab-btn">Quadtree (2D)</button>
+        <button onclick="switchTab('octree')" id="tab-octree" class="tab-btn">Octree (3D)</button>
+        <button onclick="switchTab('trie')" id="tab-trie" class="tab-btn">Trie</button>
+        <button onclick="switchTab('radix')" id="tab-radix" class="tab-btn">Radix Tree</button>
     </nav>
 
-    <!-- Conteúdo da Aplicação -->
-    <div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
-        
-        <!-- Área Principal de Simulação -->
-        <main class="flex-1 flex flex-col p-4 gap-3 overflow-hidden">
-            
-            <!-- Painel de Controles Interativos -->
-            <div class="glass p-3 rounded-xl flex flex-wrap gap-3 items-center justify-between shadow-lg">
-                <div id="controls-container" class="flex flex-wrap gap-2 items-center">
-                    <!-- Gerado dinamicamente via JS -->
-                </div>
-                <div class="flex items-center gap-2 text-xs text-slate-400 border-l border-slate-800 pl-3">
-                    <label>Velocidade:</label>
-                    <input type="range" id="speed-range" min="100" max="1500" value="700" class="accent-indigo-500 w-20 cursor-pointer">
-                </div>
+    <div class="main-container">
+        <main>
+            <div class="controls-bar" id="controls-bar">
+                <!-- Preenchido via JavaScript -->
             </div>
 
-            <!-- Palco Visual (SVG / Canvas 2D / Container 3D) -->
-            <div class="flex-1 glass rounded-xl relative min-h-[400px] flex items-center justify-center overflow-hidden border border-slate-800/80 shadow-2xl">
-                
-                <!-- Renderizador SVG (Para Árvores Binárias e Tries) -->
-                <svg id="svg-stage" class="w-full h-full absolute inset-0 hidden"></svg>
-
-                <!-- Canvas 2D (Para Quadtree) -->
-                <canvas id="canvas-2d" class="w-full h-full absolute inset-0 hidden"></canvas>
-                
-                <!-- Canvas 3D (Para Octree) -->
-                <div id="octree-3d-container" class="w-full h-full absolute inset-0 hidden"></div>
-
-                <!-- Dica de Câmera 3D -->
-                <div id="octree-overlay" class="absolute top-3 left-3 bg-slate-950/80 backdrop-blur px-3 py-1.5 rounded-lg text-xs text-slate-300 border border-slate-800 hidden shadow">
-                    💡 <b>Controles 3D:</b> Clique e arraste para girar | Scroll para Zoom
-                </div>
+            <div class="stage-box" id="stage-box">
+                <svg id="svg-stage"></svg>
+                <canvas id="canvas-2d" style="display:none;"></canvas>
             </div>
 
-            <!-- Terminal de Log de Execução -->
-            <div class="glass p-3 rounded-xl h-28 overflow-y-auto font-mono text-xs text-slate-300 flex flex-col gap-1 border border-slate-800/80 shadow-inner" id="trace-log">
-                <div class="text-indigo-400">▶ Simulador de Árvores carregado com sucesso. Selecione uma estrutura para iniciar.</div>
+            <div class="log-terminal" id="log-terminal">
+                <div style="color: #818cf8;">▶ Simulador de Árvores carregado. Clique nos botões acima para interagir.</div>
             </div>
         </main>
 
-        <!-- Sidebar Teórica -->
-        <aside class="w-full lg:w-80 bg-slate-900/80 border-l border-slate-800 p-4 flex flex-col gap-3 overflow-y-auto shadow-xl">
+        <aside>
             <div>
-                <h2 id="theory-title" class="text-base font-bold text-indigo-300">Segment Tree</h2>
-                <span id="theory-category" class="text-xs text-slate-400">Árvore de Intervalos</span>
+                <h2 id="theory-title" style="color: #a5b4fc; font-size: 1.1rem;">Segment Tree</h2>
+                <span id="theory-category" style="color: #94a3b8; font-size: 0.75rem;">Árvore de Intervalos</span>
             </div>
+            <div class="info-card">
+                <h3>Complexidade</h3>
+                <p id="theory-complexity">Consulta: O(log n) | Update: O(log n)</p>
+            </div>
+            <div class="info-card">
+                <h3>Descrição Teórica</h3>
+                <p id="theory-description">Divide um vetor original recursivamente ao meio para responder a consultas por intervalo em tempo logarítmico.</p>
+            </div>
+            <div class="info-card">
+                <h3>Aplicações Práticas</h3>
+                <p id="theory-applications">Sistemas de séries temporais e geometria computacional.</p>
+            </div>
+        </aside>
+    </div>
 
-            <div class="space-y-3 text-xs">
-                <div class="bg-slate-950/50 p-3 rounded-lg border border-slate-800">
-                    <h3 class="font-semibold text-indigo-400 mb-1">Complexidade</h3>
-                    <p id="theory-
+    <script>
+        let currentTab = 'segment';
+        const svgStage = document.getElementById('svg-stage');
+        const canvas2D = document.getElementById('canvas-2d');
+        const ctx2D = canvas2D.getContext('2d');
+        const logTerminal = document.getElementById('log-terminal');
+
+        let segArray = [2, 1, 5, 3, 4, 6];
+        let segTree = [];
+        let quadPoints = [];
+
+        function log(msg, color = '#f1f5f9') {
+            const div = document.createElement('div');
+            div.style.color = color;
+            div.textContent = `> ${msg}`;
+            logTerminal.appendChild(div);
+            logTerminal.scrollTop = logTerminal.scrollHeight;
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`tab-${tab}`).classList.add('active');
+
+            if (tab === 'quadtree') {
+                svgStage.style.display = 'none';
+                canvas2D.style.display = 'block';
+            } else {
+                svgStage.style.display = 'block';
+                canvas2D.style.display = 'none';
+            }
+
+            setupControls();
+            updateTheory();
+            render();
+        }
+
+        function setupControls() {
+            const bar = document.getElementById('controls-bar');
+            if (currentTab === 'segment') {
+                bar.innerHTML = `
+                    <div class="control-group">
+                        <button onclick="buildSegmentTree()" class="btn-action">🔨 Reconstruir Árvore</button>
+                    </div>
+                    <div class="control-group">
+                        <span style="font-size:0.75rem; color:#94a3b8;">Intervalo [L, R]:</span>
+                        <input type="number" id="ql" value="1" min="0" max="5">
+                        <input type="number" id="qr" value="4" min="0" max="5">
+                        <button onclick="runSegmentQuery()" class="btn-success">🔍 Consulta (Soma)</button>
+                    </div>
+                `;
+            } else if (currentTab === 'quadtree') {
+                bar.innerHTML = `
+                    <span style="font-size:0.75rem; color:#94a3b8;">Clique no painel para inserir pontos 2D</span>
+                    <button onclick="resetQuad()" class="btn-reset">🔄 Limpar Plano</button>
+                `;
+            } else {
+                bar.innerHTML = `
+                    <div class="control-group">
+                        <input type="text" id="val-input" placeholder="Valor / Palavra">
+                        <button onclick="handleInsert()" class="btn-action">Inserir Elemento</button>
+                    </div>
+                `;
+            }
+        }
+
+        function updateTheory() {
+            const data = {
+                segment: { title: "Segment Tree", cat: "Árvore de Intervalos", comp: "Consulta: O(log n) | Update: O(log n)", desc: "Divide o vetor original recursivamente ao meio para responder a consultas de intervalo.", apps: "Séries temporais e jogos." },
+                rb: { title: "Árvore Rubro-Negra", cat: "Árvore Balanceada", comp: "Busca/Inserção: O(log n)", desc: "Mantém a árvore balanceada através de cores (vermelho/preto) e rotações.", apps: "std::map no C++." },
+                patricia: { title: "PATRICIA Trie", cat: "Trie Compactada por Bit", comp: "Busca: O(K) bits", desc: "Evita nós desnecessários testando bits específicos das chaves.", apps: "Roteamento de redes IP." },
+                quadtree: { title: "Quadtree (2D)", cat: "Divisão Espacial 2D", comp: "Busca: O(log n) médio", desc: "Subdivide um plano 2D em 4 quadrantes recursivos.", apps: "Motores de jogos 2D." },
+                octree: { title: "Octree (3D)", cat: "Divisão Espacial 3D", comp: "Busca: O(log n) médio", desc: "Subdivide um espaço 3D em 8 octantes recursivos.", apps: "Jogos 3D (Unreal/Unity)." },
+                trie: { title: "Trie Convencional", cat: "Árvore de Prefixos", comp: "Busca: O(L) caracteres", desc: "Guarda caracteres das palavras ao longo do caminho.", apps: "Autocompletar de buscas." },
+                radix: { title: "Radix Tree", cat: "Trie Compactada", comp: "Busca: O(L)", desc: "Agrupa arestas de nós com filho único em sequências de texto.", apps: "Roteadores Web de URLs." }
+            };
+            const info = data[currentTab];
+            document.getElementById('theory-title').textContent = info.title;
+            document.getElementById('theory-category').textContent = info.cat;
+            document.getElementById('theory-complexity').textContent = info.comp;
+            document.getElementById('theory-description').textContent = info.desc;
+            document.getElementById('theory-applications').textContent = info.apps;
+        }
+
+        function buildSegmentTree() {
+            segTree = new Array(4 * segArray.length).fill(0);
+            function build(node, L, R) {
+                if (L === R) { segTree[node] = segArray[L]; return; }
+                let mid = Math.floor((L + R) / 2);
+                build(2 * node + 1, L, mid);
+                build(2 * node + 2, mid + 1, R);
+                segTree[node] = segTree[2 * node + 1] + segTree[2 * node + 2];
+            }
+            build(0, 0, segArray.length - 1);
+            log("Segment Tree construída para [2, 1, 5, 3, 4, 6]", "#34d399");
+            renderSegmentTree();
+        }
+
+        function renderSegmentTree(highlights = []) {
+            svgStage.innerHTML = '';
+            const w = svgStage.parentElement.clientWidth || 600;
+
+            function draw(node, L, R, x, y, dx) {
+                if (L > R || node >= segTree.length || segTree[node] === undefined) return;
+                
+                if (L !== R) {
+                    let mid = Math.floor((L + R) / 2);
+                    // Linhas para os filhos
+                    createLine(x, y, x - dx, y + 50);
+                    createLine(x, y, x + dx, y + 50);
+                    draw(2 * node + 1, L, mid, x - dx, y + 50, dx / 2);
+                    draw(2 * node + 2, mid + 1, R, x + dx, y + 50, dx / 2);
+                }
+
+                const isH = highlights.includes(node);
+                createCircle(x, y, isH ? '#059669' : '#1e1b4b', isH ? '#34d399' : '#6366f1');
+                createText(x, y + 4, segTree[node], '#fff', '12px', 'bold');
+                createText(x, y - 22, `[${L},${R}]`, '#94a3b8', '10px', 'normal');
+            }
+
+            if (segTree.length > 0) draw(0, 0, segArray.length - 1, w / 2, 45, w / 4);
+        }
+
+        function createLine(x1, y1, x2, y2) {
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+            line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+            line.setAttribute('stroke', '#334155'); line.setAttribute('stroke-width', '2');
+            svgStage.appendChild(line);
+        }
+
+        function createCircle(cx, cy, fill, stroke) {
+            const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            c.setAttribute('cx', cx); c.setAttribute('cy', cy); c.setAttribute('r', '18');
+            c.setAttribute('fill', fill); c.setAttribute('stroke', stroke); c.setAttribute('stroke-width', '2');
+            svgStage.appendChild(c);
+        }
+
+        function createText(x, y, text, color, size, weight) {
+            const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            t.setAttribute('x', x); t.setAttribute('y', y);
+            t.setAttribute('fill', color); t.setAttribute('font-size', size);
+            t.setAttribute('font-weight', weight); t.setAttribute('text-anchor', 'middle');
+            t.textContent = text;
+            svgStage.appendChild(t);
+        }
+
+        function runSegmentQuery() {
+            const ql = parseInt(document.getElementById('ql').value);
+            const qr = parseInt(document.getElementById('qr').value);
+            let h = [];
+            
+            function query(node, L, R) {
+                if (qr < L || ql > R) return 0;
+                if (ql <= L && R <= qr) { h.push(node); return segTree[node]; }
+                let mid = Math.floor((L + R) / 2);
+                return query(2 * node + 1, L, mid) + query(2 * node + 2, mid + 1, R);
+            }
+
+            const res = query(0, 0, segArray.length - 1);
+            renderSegmentTree(h);
+            log(`Consulta Range Sum [${ql}, ${qr}] = ${res}`, "#fbbf24");
+        }
+
+        canvas2D.parentElement.addEventListener('click', (e) => {
+            if (currentTab !== 'quadtree') return;
+            const rect = canvas2D.getBoundingClientRect();
+            quadPoints.push({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+            log(`Ponto adicionado em (${Math.round(e.clientX - rect.left)}, ${Math.round(e.clientY - rect.top)})`, "#34d399");
+            renderQuad();
+        });
+
+        function renderQuad() {
+            canvas2D.width = canvas2D.parentElement.clientWidth;
+            canvas2D.height = canvas2D.parentElement.clientHeight;
+            ctx2D.clearRect(0, 0, canvas2D.width, canvas2D.height);
+            
+            ctx2D.strokeStyle = '#334155';
+            ctx2D.strokeRect(0, 0, canvas2D.width, canvas2D.height);
+            ctx2D.beginPath();
+            ctx2D.moveTo(canvas2D.width/2, 0); ctx2D.lineTo(canvas2D.width/2, canvas2D.height);
+            ctx2D.moveTo(0, canvas2D.height/2); ctx2D.lineTo(canvas2D.width, canvas2D.height/2);
+            ctx2D.stroke();
+
+            quadPoints.forEach(p => {
+                ctx2D.fillStyle = '#34d399';
+                ctx2D.beginPath();
+                ctx2D.arc(p.x, p.y, 5, 0, Math.PI * 2);
+                ctx2D.fill();
+            });
+        }
+
+        function resetQuad() { quadPoints = []; renderQuad(); log("Plano 2D limpo.", "#818cf8"); }
+        function handleInsert() {
+            const input = document.getElementById('val-input');
+            if (input && input.value) { log(`Elemento "${input.value}" inserido na ${currentTab.toUpperCase()}.`, "#34d399"); input.value = ''; }
+        }
+
+        function render() {
+            if (currentTab === 'segment') {
+                if (segTree.length === 0) buildSegmentTree();
+                else renderSegmentTree();
+            } else if (currentTab === 'quadtree') {
+                renderQuad();
+            } else {
+                svgStage.innerHTML = `<text x="50%" y="50%" fill="#94a3b8" font-size="14" text-anchor="middle">Estrutura ${currentTab.toUpperCase()} pronta.</text>`;
+            }
+        }
+
+        window.addEventListener('resize', render);
+        setTimeout(() => { switchTab('segment'); }, 100);
+    </script>
+</body>
+</html>
