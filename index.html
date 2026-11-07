@@ -22,7 +22,7 @@
         main { flex: 1; display: flex; flex-direction: column; padding: 16px; gap: 12px; overflow: hidden; }
         
         .controls-bar { background: #1e293b; padding: 10px 16px; border-radius: 12px; border: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
-        .control-group { display: flex; items-center; gap: 8px; }
+        .control-group { display: flex; align-items: center; gap: 8px; }
         
         input, button { font-size: 0.8rem; padding: 6px 12px; border-radius: 6px; }
         input[type="number"], input[type="text"] { background: #0f172a; border: 1px solid #475569; color: #fff; width: 60px; text-align: center; }
@@ -33,7 +33,7 @@
         .btn-success:hover { background: #047857; }
         .btn-reset { background: #334155; color: #e2e8f0; border: 1px solid #475569; cursor: pointer; }
 
-        .stage-box { flex: 1; background: #0f172a; border-radius: 12px; border: 1px solid #1e293b; position: relative; overflow: hidden; min-h: 380px; display: flex; align-items: center; justify-content: center; }
+        .stage-box { flex: 1; background: #0f172a; border-radius: 12px; border: 1px solid #1e293b; position: relative; overflow: hidden; min-height: 380px; display: flex; align-items: center; justify-content: center; }
         svg, canvas { width: 100%; height: 100%; position: absolute; inset: 0; }
         
         .log-terminal { background: #0f172a; border-radius: 12px; border: 1px solid #1e293b; height: 110px; padding: 10px; font-family: monospace; font-size: 0.75rem; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
@@ -65,9 +65,7 @@
 
     <div class="main-container">
         <main>
-            <div class="controls-bar" id="controls-bar">
-                <!-- Preenchido via JavaScript -->
-            </div>
+            <div class="controls-bar" id="controls-bar"></div>
 
             <div class="stage-box" id="stage-box">
                 <svg id="svg-stage"></svg>
@@ -75,7 +73,7 @@
             </div>
 
             <div class="log-terminal" id="log-terminal">
-                <div style="color: #818cf8;">▶ Simulador de Árvores carregado. Clique nos botões acima para interagir.</div>
+                <div style="color: #818cf8;">▶ Simulador de Árvores carregado com sucesso. Selecione uma estrutura para interagir.</div>
             </div>
         </main>
 
@@ -90,7 +88,7 @@
             </div>
             <div class="info-card">
                 <h3>Descrição Teórica</h3>
-                <p id="theory-description">Divide um vetor original recursivamente ao meio para responder a consultas por intervalo em tempo logarítmico.</p>
+                <p id="theory-description">Divide o vetor original recursivamente ao meio para responder a consultas por intervalo em tempo logarítmico.</p>
             </div>
             <div class="info-card">
                 <h3>Aplicações Práticas</h3>
@@ -106,9 +104,17 @@
         const ctx2D = canvas2D.getContext('2d');
         const logTerminal = document.getElementById('log-terminal');
 
+        // Dados Exemplo para Renderização
         let segArray = [2, 1, 5, 3, 4, 6];
         let segTree = [];
         let quadPoints = [];
+        let octreePoints = [];
+
+        // Árvores de Exemplo Pré-Carregadas
+        let rbData = { val: 20, color: 'B', left: { val: 10, color: 'B', left: { val: 5, color: 'R' } }, right: { val: 30, color: 'R', left: { val: 25, color: 'B' }, right: { val: 40, color: 'B' } } };
+        let trieWords = ["UFOP", "AEDS", "ALGO", "TREE"];
+        let radixData = { label: "", children: [{ label: "com", children: [{ label: "pilar" }, { label: "primir" }] }, { label: "teste" }] };
+        let patriciaData = { bit: 0, val: "ROOT", left: { bit: 1, val: "010", isLeaf: true }, right: { bit: 2, val: "110", isLeaf: true } };
 
         function log(msg, color = '#f1f5f9') {
             const div = document.createElement('div');
@@ -123,7 +129,7 @@
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(`tab-${tab}`).classList.add('active');
 
-            if (tab === 'quadtree') {
+            if (tab === 'quadtree' || tab === 'octree') {
                 svgStage.style.display = 'none';
                 canvas2D.style.display = 'block';
             } else {
@@ -150,10 +156,10 @@
                         <button onclick="runSegmentQuery()" class="btn-success">🔍 Consulta (Soma)</button>
                     </div>
                 `;
-            } else if (currentTab === 'quadtree') {
+            } else if (currentTab === 'quadtree' || currentTab === 'octree') {
                 bar.innerHTML = `
-                    <span style="font-size:0.75rem; color:#94a3b8;">Clique no painel para inserir pontos 2D</span>
-                    <button onclick="resetQuad()" class="btn-reset">🔄 Limpar Plano</button>
+                    <span style="font-size:0.75rem; color:#94a3b8;">Clique no plano escuro para inserir coordenadas</span>
+                    <button onclick="resetSpatial()" class="btn-reset">🔄 Resetar Espaço</button>
                 `;
             } else {
                 bar.innerHTML = `
@@ -183,6 +189,34 @@
             document.getElementById('theory-applications').textContent = info.apps;
         }
 
+        // SVG Helpers
+        function createLine(x1, y1, x2, y2, color = '#334155') {
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+            line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+            line.setAttribute('stroke', color); line.setAttribute('stroke-width', '2');
+            svgStage.appendChild(line);
+        }
+
+        function createCircle(cx, cy, fill, stroke, r = 18) {
+            const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            c.setAttribute('cx', cx); c.setAttribute('cy', cy); c.setAttribute('r', r);
+            c.setAttribute('fill', fill); c.setAttribute('stroke', stroke); c.setAttribute('stroke-width', '2');
+            svgStage.appendChild(c);
+        }
+
+        function createText(x, y, text, color = '#fff', size = '12px', weight = 'bold') {
+            const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            t.setAttribute('x', x); t.setAttribute('y', y);
+            t.setAttribute('fill', color); t.setAttribute('font-size', size);
+            t.setAttribute('font-weight', weight); t.setAttribute('text-anchor', 'middle');
+            t.textContent = text;
+            svgStage.appendChild(t);
+        }
+
+        // --- RENDERIZADORES DAS ÁRVORES ---
+
+        // 1. SEGMENT TREE
         function buildSegmentTree() {
             segTree = new Array(4 * segArray.length).fill(0);
             function build(node, L, R) {
@@ -193,7 +227,7 @@
                 segTree[node] = segTree[2 * node + 1] + segTree[2 * node + 2];
             }
             build(0, 0, segArray.length - 1);
-            log("Segment Tree construída para [2, 1, 5, 3, 4, 6]", "#34d399");
+            log("Segment Tree reconstruída para [2, 1, 5, 3, 4, 6]", "#34d399");
             renderSegmentTree();
         }
 
@@ -203,108 +237,213 @@
 
             function draw(node, L, R, x, y, dx) {
                 if (L > R || node >= segTree.length || segTree[node] === undefined) return;
-                
                 if (L !== R) {
                     let mid = Math.floor((L + R) / 2);
-                    // Linhas para os filhos
                     createLine(x, y, x - dx, y + 50);
                     createLine(x, y, x + dx, y + 50);
                     draw(2 * node + 1, L, mid, x - dx, y + 50, dx / 2);
                     draw(2 * node + 2, mid + 1, R, x + dx, y + 50, dx / 2);
                 }
-
                 const isH = highlights.includes(node);
                 createCircle(x, y, isH ? '#059669' : '#1e1b4b', isH ? '#34d399' : '#6366f1');
-                createText(x, y + 4, segTree[node], '#fff', '12px', 'bold');
+                createText(x, y + 4, segTree[node]);
                 createText(x, y - 22, `[${L},${R}]`, '#94a3b8', '10px', 'normal');
             }
-
             if (segTree.length > 0) draw(0, 0, segArray.length - 1, w / 2, 45, w / 4);
-        }
-
-        function createLine(x1, y1, x2, y2) {
-            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            line.setAttribute('x1', x1); line.setAttribute('y1', y1);
-            line.setAttribute('x2', x2); line.setAttribute('y2', y2);
-            line.setAttribute('stroke', '#334155'); line.setAttribute('stroke-width', '2');
-            svgStage.appendChild(line);
-        }
-
-        function createCircle(cx, cy, fill, stroke) {
-            const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-            c.setAttribute('cx', cx); c.setAttribute('cy', cy); c.setAttribute('r', '18');
-            c.setAttribute('fill', fill); c.setAttribute('stroke', stroke); c.setAttribute('stroke-width', '2');
-            svgStage.appendChild(c);
-        }
-
-        function createText(x, y, text, color, size, weight) {
-            const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            t.setAttribute('x', x); t.setAttribute('y', y);
-            t.setAttribute('fill', color); t.setAttribute('font-size', size);
-            t.setAttribute('font-weight', weight); t.setAttribute('text-anchor', 'middle');
-            t.textContent = text;
-            svgStage.appendChild(t);
         }
 
         function runSegmentQuery() {
             const ql = parseInt(document.getElementById('ql').value);
             const qr = parseInt(document.getElementById('qr').value);
             let h = [];
-            
             function query(node, L, R) {
                 if (qr < L || ql > R) return 0;
                 if (ql <= L && R <= qr) { h.push(node); return segTree[node]; }
                 let mid = Math.floor((L + R) / 2);
                 return query(2 * node + 1, L, mid) + query(2 * node + 2, mid + 1, R);
             }
-
             const res = query(0, 0, segArray.length - 1);
             renderSegmentTree(h);
             log(`Consulta Range Sum [${ql}, ${qr}] = ${res}`, "#fbbf24");
         }
 
+        // 2. RUBRO-NEGRA
+        function renderRBTree() {
+            svgStage.innerHTML = '';
+            const w = svgStage.parentElement.clientWidth || 600;
+
+            function draw(node, x, y, dx) {
+                if (!node) return;
+                if (node.left) {
+                    createLine(x, y, x - dx, y + 50);
+                    draw(node.left, x - dx, y + 50, dx / 2);
+                }
+                if (node.right) {
+                    createLine(x, y, x + dx, y + 50);
+                    draw(node.right, x + dx, y + 50, dx / 2);
+                }
+                const isRed = node.color === 'R';
+                createCircle(x, y, isRed ? '#dc2626' : '#0f172a', isRed ? '#ef4444' : '#475569');
+                createText(x, y + 4, node.val);
+            }
+            draw(rbData, w / 2, 45, w / 4);
+        }
+
+        // 3. TRIE CONVENCIONAL
+        function renderTrie() {
+            svgStage.innerHTML = '';
+            const w = svgStage.parentElement.clientWidth || 600;
+
+            createCircle(w / 2, 45, '#1e1b4b', '#6366f1');
+            createText(w / 2, 49, "ROOT", '#a5b4fc', '10px');
+
+            const startY = 110;
+            const stepX = w / (trieWords.length + 1);
+
+            trieWords.forEach((word, idx) => {
+                const x = stepX * (idx + 1);
+                createLine(w / 2, 45, x, startY);
+
+                for (let i = 0; i < word.length; i++) {
+                    const py = startY + (i * 45);
+                    if (i > 0) createLine(x, py - 45, x, py);
+                    const isLast = i === word.length - 1;
+                    createCircle(x, py, isLast ? '#059669' : '#1e1b4b', isLast ? '#34d399' : '#6366f1', 15);
+                    createText(x, py + 4, word[i]);
+                }
+            });
+        }
+
+        // 4. RADIX TREE
+        function renderRadix() {
+            svgStage.innerHTML = '';
+            const w = svgStage.parentElement.clientWidth || 600;
+
+            createCircle(w / 2, 45, '#1e1b4b', '#6366f1');
+            createText(w / 2, 49, "ROOT", '#a5b4fc', '10px');
+
+            const leftX = w / 3;
+            const rightX = (2 * w) / 3;
+
+            // Ramo Esquerdo
+            createLine(w / 2, 45, leftX, 110);
+            createText((w / 2 + leftX) / 2 - 10, 75, "com", '#fbbf24', '11px');
+            createCircle(leftX, 110, '#1e1b4b', '#6366f1');
+
+            createLine(leftX, 110, leftX - 40, 170);
+            createText(leftX - 35, 140, "pilar", '#34d399', '11px');
+            createCircle(leftX - 40, 170, '#059669', '#34d399');
+
+            createLine(leftX, 110, leftX + 40, 170);
+            createText(leftX + 35, 140, "primir", '#34d399', '11px');
+            createCircle(leftX + 40, 170, '#059669', '#34d399');
+
+            // Ramo Direito
+            createLine(w / 2, 45, rightX, 110);
+            createText((w / 2 + rightX) / 2 + 10, 75, "teste", '#34d399', '11px');
+            createCircle(rightX, 110, '#059669', '#34d399');
+        }
+
+        // 5. PATRICIA TRIE
+        function renderPatricia() {
+            svgStage.innerHTML = '';
+            const w = svgStage.parentElement.clientWidth || 600;
+
+            createCircle(w / 2, 45, '#1e1b4b', '#6366f1');
+            createText(w / 2, 44, "b[0]");
+
+            createLine(w / 2, 45, w / 3, 110);
+            createCircle(w / 3, 110, '#0f172a', '#34d399');
+            createText(w / 3, 114, "010", '#34d399');
+
+            createLine(w / 2, 45, (2 * w) / 3, 110);
+            createCircle((2 * w) / 3, 110, '#0f172a', '#34d399');
+            createText((2 * w) / 3, 114, "110", '#34d399');
+        }
+
+        // 6. SPATIAL (QUADTREE E OCTREE 2D PROJECTION)
         canvas2D.parentElement.addEventListener('click', (e) => {
-            if (currentTab !== 'quadtree') return;
+            if (currentTab !== 'quadtree' && currentTab !== 'octree') return;
             const rect = canvas2D.getBoundingClientRect();
-            quadPoints.push({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-            log(`Ponto adicionado em (${Math.round(e.clientX - rect.left)}, ${Math.round(e.clientY - rect.top)})`, "#34d399");
-            renderQuad();
+            const pt = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+            
+            if (currentTab === 'quadtree') quadPoints.push(pt);
+            else octreePoints.push(pt);
+            
+            log(`Ponto inserido em (${Math.round(pt.x)}, ${Math.round(pt.y)}) na ${currentTab.toUpperCase()}`, "#34d399");
+            renderSpatial();
         });
 
-        function renderQuad() {
+        function renderSpatial() {
             canvas2D.width = canvas2D.parentElement.clientWidth;
             canvas2D.height = canvas2D.parentElement.clientHeight;
             ctx2D.clearRect(0, 0, canvas2D.width, canvas2D.height);
             
             ctx2D.strokeStyle = '#334155';
             ctx2D.strokeRect(0, 0, canvas2D.width, canvas2D.height);
-            ctx2D.beginPath();
-            ctx2D.moveTo(canvas2D.width/2, 0); ctx2D.lineTo(canvas2D.width/2, canvas2D.height);
-            ctx2D.moveTo(0, canvas2D.height/2); ctx2D.lineTo(canvas2D.width, canvas2D.height/2);
-            ctx2D.stroke();
 
-            quadPoints.forEach(p => {
-                ctx2D.fillStyle = '#34d399';
+            if (currentTab === 'quadtree') {
+                // Quadrantes 2D
                 ctx2D.beginPath();
-                ctx2D.arc(p.x, p.y, 5, 0, Math.PI * 2);
-                ctx2D.fill();
-            });
+                ctx2D.moveTo(canvas2D.width / 2, 0); ctx2D.lineTo(canvas2D.width / 2, canvas2D.height);
+                ctx2D.moveTo(0, canvas2D.height / 2); ctx2D.lineTo(canvas2D.width, canvas2D.height / 2);
+                ctx2D.stroke();
+
+                quadPoints.forEach(p => {
+                    ctx2D.fillStyle = '#34d399';
+                    ctx2D.beginPath(); ctx2D.arc(p.x, p.y, 5, 0, Math.PI * 2); ctx2D.fill();
+                });
+            } else {
+                // Octree (Projeção Isométrica 3D)
+                ctx2D.strokeStyle = '#6366f1';
+                ctx2D.strokeRect(40, 40, canvas2D.width - 80, canvas2D.height - 80);
+                ctx2D.strokeRect(80, 80, canvas2D.width - 80, canvas2D.height - 80);
+
+                ctx2D.beginPath();
+                ctx2D.moveTo(40, 40); ctx2D.lineTo(80, 80);
+                ctx2D.moveTo(canvas2D.width - 40, 40); ctx2D.lineTo(canvas2D.width, 80);
+                ctx2D.moveTo(40, canvas2D.height - 40); ctx2D.lineTo(80, canvas2D.height);
+                ctx2D.stroke();
+
+                octreePoints.forEach(p => {
+                    ctx2D.fillStyle = '#60a5fa';
+                    ctx2D.beginPath(); ctx2D.arc(p.x, p.y, 6, 0, Math.PI * 2); ctx2D.fill();
+                });
+            }
         }
 
-        function resetQuad() { quadPoints = []; renderQuad(); log("Plano 2D limpo.", "#818cf8"); }
+        function resetSpatial() { 
+            if (currentTab === 'quadtree') quadPoints = [];
+            else octreePoints = [];
+            renderSpatial(); 
+            log("Espaço limpo.", "#818cf8"); 
+        }
+
         function handleInsert() {
             const input = document.getElementById('val-input');
-            if (input && input.value) { log(`Elemento "${input.value}" inserido na ${currentTab.toUpperCase()}.`, "#34d399"); input.value = ''; }
+            if (input && input.value) {
+                const val = input.value;
+                if (currentTab === 'trie') trieWords.push(val.toUpperCase());
+                log(`Elemento "${val}" inserido na ${currentTab.toUpperCase()}.`, "#34d399");
+                input.value = '';
+                render();
+            }
         }
 
         function render() {
             if (currentTab === 'segment') {
                 if (segTree.length === 0) buildSegmentTree();
                 else renderSegmentTree();
-            } else if (currentTab === 'quadtree') {
-                renderQuad();
-            } else {
-                svgStage.innerHTML = `<text x="50%" y="50%" fill="#94a3b8" font-size="14" text-anchor="middle">Estrutura ${currentTab.toUpperCase()} pronta.</text>`;
+            } else if (currentTab === 'rb') {
+                renderRBTree();
+            } else if (currentTab === 'trie') {
+                renderTrie();
+            } else if (currentTab === 'radix') {
+                renderRadix();
+            } else if (currentTab === 'patricia') {
+                renderPatricia();
+            } else if (currentTab === 'quadtree' || currentTab === 'octree') {
+                renderSpatial();
             }
         }
 
