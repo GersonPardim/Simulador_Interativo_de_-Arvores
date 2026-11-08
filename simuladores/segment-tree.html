@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador Interativo - Segment Tree Dinâmica</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['Fira Code', 'monospace'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #0f172a; color: #f8fafc; font-family: 'Inter', sans-serif; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        .pulse-glow { animation: pulse-glow 1.5s infinite; }
+        @keyframes pulse-glow {
+            0%, 100% { filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.8)); }
+            50% { filter: drop-shadow(0 0 16px rgba(245, 158, 11, 1)); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between bg-slate-950 text-slate-100">
+
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50 px-4 py-3">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-amber-600/20 text-amber-400 rounded-xl border border-amber-500/30">
+                    <i class="fa-solid fa-chart-line text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg text-slate-100 leading-tight">Simulador Segment Tree Dinâmica</h1>
+                    <p class="text-xs text-slate-400">Controlo Total do Array e Intervalos (AEDS II)</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700/60">
+                    <i class="fa-solid fa-sliders text-amber-400 mr-1"></i> Tamanho Flexível
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1">
+        
+        <!-- Controles -->
+        <section class="lg:col-span-4 flex flex-col gap-5">
+            <!-- Gestão do Array -->
+            <div class="bg-slate-900/90 rounded-2xl border border-slate-800 p-4 shadow-xl space-y-4">
+                <h2 class="text-sm font-bold text-slate-300 uppercase tracking-wider">1. Gestão do Array Base</h2>
+                
+                <div class="space-y-3">
+                    <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80 space-y-2">
+                        <label class="text-[11px] text-slate-400 font-semibold"><i class="fa-solid fa-list text-purple-400"></i> Elementos Atuais (Clica para editar):</label>
+                        <div id="array-container" class="flex flex-wrap gap-1.5 p-2 bg-slate-900 rounded-lg border border-slate-800 min-h-[42px] items-center">
+                            <!-- Injetado via JS -->
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80 space-y-1">
+                            <label class="text-[10px] text-slate-400 font-semibold">+ Adicionar:</label>
+                            <div class="flex gap-1">
+                                <input type="number" id="new-elem-val" class="w-full bg-slate-900 border border-slate-700 rounded px-1.5 py-1 text-xs font-mono text-emerald-300 focus:outline-none" placeholder="Valor">
+                                <button onclick="addElement()" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs"><i class="fa-solid fa-plus"></i></button>
+                            </div>
+                        </div>
+                        <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80 space-y-1 flex flex-col justify-between">
+                            <label class="text-[10px] text-slate-400 font-semibold">- Remover:</label>
+                            <button onclick="removeElement()" class="w-full py-1 bg-rose-600 hover:bg-rose-500 text-white rounded text-xs font-medium"><i class="fa-solid fa-trash mr-1"></i> Último</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Operações de Consulta -->
+            <div class="bg-slate-900/90 rounded-2xl border border-slate-800 p-4 shadow-xl space-y-4">
+                <h2 class="text-sm font-bold text-slate-300 uppercase tracking-wider">2. Operações</h2>
+                
+                <div class="space-y-3">
+                    <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80 space-y-2">
+                        <label class="text-[11px] text-slate-400 font-semibold"><i class="fa-solid fa-magnifying-glass text-amber-400"></i> Consulta [L, R]:</label>
+                        <div class="flex gap-2">
+                            <input type="number" id="query-l" class="w-1/2 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs font-mono text-amber-300 focus:outline-none" placeholder="L">
+                            <input type="number" id="query-r" class="w-1/2 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs font-mono text-amber-300 focus:outline-none" placeholder="R">
+                        </div>
+                        <button onclick="startQuery()" class="w-full mt-1 px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-medium transition shadow">Consultar Soma</button>
+                    </div>
+
+                    <button onclick="randomizeArray()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium border border-slate-700/50 transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-shuffle"></i> Gerar Array Aleatório
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Visualizador e Console -->
+        <section class="lg:col-span-8 flex flex-col gap-5">
+            <div class="bg-slate-900/90 rounded-2xl border border-slate-800 p-4 shadow-xl flex flex-col relative min-h-[420px]">
+                <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm font-bold text-slate-200">Árvore Binária (Segment Tree)</span>
+                    </div>
+                    <div class="flex items-center gap-3 text-xs text-slate-400">
+                        <i class="fa-solid fa-gauge-high"></i> Velocidade:
+                        <input type="range" id="animation-speed" min="100" max="1500" value="600" step="100" class="w-20 accent-amber-500">
+                    </div>
+                </div>
+                
+                <div id="canvas-wrapper" class="w-full flex-1 relative flex items-center justify-center bg-slate-950 rounded-lg border border-slate-800/80 overflow-auto min-h-[360px]">
+                    <svg id="tree-svg" class="block mx-auto min-w-[600px] min-h-[350px]"></svg>
+                </div>
+            </div>
+
+            <div class="bg-slate-900/90 rounded-2xl border border-slate-800 p-4 shadow-xl flex-1 flex flex-col max-h-[220px]">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-terminal text-amber-400"></i> Rastro de Execução
+                    </h3>
+                    <button onclick="clearTraceLog()" class="text-[11px] text-slate-400 hover:text-slate-200">Limpar Log</button>
+                </div>
+                <div id="trace-log" class="flex-1 bg-slate-950 rounded-xl p-3 border border-slate-800/80 font-mono text-xs overflow-y-auto space-y-1.5">
+                    <div class="text-slate-500 italic">Segment Tree dinâmica carregada com sucesso.</div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        function logTrace(msg, type = 'info') {
+            const logBox = document.getElementById('trace-log');
+            if(!logBox) return;
+            const entry = document.createElement('div');
+            let color = 'text-slate-300';
+            if (type === 'match') color = 'text-emerald-400 font-semibold';
+            if (type === 'error') color = 'text-red-400';
+            if (type === 'active') color = 'text-amber-400 font-semibold';
+            if (type === 'warn') color = 'text-blue-400 font-semibold';
+            entry.className = `${color} flex items-start gap-1.5 leading-relaxed`;
+            entry.innerHTML = `<span class="text-slate-600 select-none">></span> <span>${msg}</span>`;
+            logBox.appendChild(entry);
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        function clearTraceLog() { document.getElementById('trace-log').innerHTML = ''; }
+        function getSpeed() { return 1600 - parseInt(document.getElementById('animation-speed').value); }
+        function sleep(ms) { return new Promise(resolve => setTimeout(resolve, Math.max(0, ms))); }
+
+        // --- ESTADO GLOBAL ---
+        let arr = [1, 3, 5, 7, 9];
+        let tree = [];
+        let treeRanges = [];
+        let isAnimating = false;
+
+        function buildSegmentTree() {
+            let n = arr.length;
+            tree = new Array(4 * n).fill(0);
+            treeRanges = new Array(4 * n).fill(null);
+
+            function build(node, start, end) {
+                if (start === end) {
+                    tree[node] = arr[start];
+                    treeRanges[node] = {l: start, r: end};
+                    return;
+                }
+                let mid = Math.floor((start + end) / 2);
+                build(2 * node, start, mid);
+                build(2 * node + 1, mid + 1, end);
+                tree[node] = tree[2 * node] + tree[2 * node + 1];
+                treeRanges[node] = {l: start, r: end};
+            }
+            if (n > 0) build(1, 0, n - 1);
+            renderArrayUI();
+            drawTreeVisual();
+        }
+
+        function renderArrayUI() {
+            const container = document.getElementById('array-container');
+            container.innerHTML = '';
+            
+            if (arr.length === 0) {
+                container.innerHTML = '<span class="text-xs text-slate-500 italic">Array vazio. Adiciona elementos.</span>';
+                return;
+            }
+
+            arr.forEach((val, idx) => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'flex flex-col items-center bg-slate-950 px-2 py-1 rounded border border-slate-800';
+                
+                const label = document.createElement('span');
+                label.className = 'text-[9px] text-slate-500 font-mono';
+                label.innerText = `[${idx}]`;
+
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.value = val;
+                input.className = 'w-10 bg-transparent text-center text-xs font-mono text-emerald-400 focus:outline-none font-bold';
+                input.onchange = (e) => updateElementDirect(idx, parseInt(e.target.value));
+
+                wrapper.appendChild(label);
+                wrapper.appendChild(input);
+                container.appendChild(wrapper);
+            });
+        }
+
+        function addElement() {
+            if (isAnimating) return;
+            const input = document.getElementById('new-elem-val');
+            let val = parseInt(input.value);
+            if (isNaN(val)) val = Math.floor(Math.random() * 10) + 1;
+            
+            arr.push(val);
+            input.value = '';
+            buildSegmentTree();
+            logTrace(`Elemento ${val} adicionado no índice ${arr.length - 1}. Árvore reconstruída.`, 'match');
+        }
+
+        function removeElement() {
+            if (isAnimating) return;
+            if (arr.length <= 1) {
+                logTrace("O array precisa de ter pelo menos 1 elemento.", "error");
+                return;
+            }
+            arr.pop();
+            buildSegmentTree();
+            logTrace(`Último elemento removido. Árvore reconstruída.`, 'warn');
+        }
+
+        function updateElementDirect(idx, newVal) {
+            if (isAnimating || isNaN(newVal)) return;
+            arr[idx] = newVal;
+            buildSegmentTree();
+            logTrace(`Índice ${idx} atualizado para ${newVal}. Segment Tree recalculada.`, 'match');
+        }
+
+        function randomizeArray() {
+            if (isAnimating) return;
+            let size = Math.floor(Math.random() * 5) + 3; // Tamanho entre 3 e 7
+            arr = Array.from({length: size}, () => Math.floor(Math.random() * 15) + 1);
+            buildSegmentTree();
+            logTrace(`Array aleatório gerado com ${size} elementos.`, "warn");
+        }
+
+        // --- RENDERIZAÇÃO SVG DINÂMICA (EXPANSÍVEL) ---
+        let treeNodesMeta = {};
+
+        function drawTreeVisual(highlightNodes = []) {
+            const svg = document.getElementById('tree-svg');
+            if(!svg) return;
+            svg.innerHTML = '';
+            treeNodesMeta = {};
+
+            if (arr.length === 0) return;
+
+            const wrapper = document.getElementById('canvas-wrapper');
+            const baseW = Math.max(wrapper.clientWidth, 650);
+            const baseH = Math.max(wrapper.clientHeight, 400);
+
+            let minX = Infinity;
+            let maxX = -Infinity;
+            let maxY = -Infinity;
+
+            // 1. Cálculo de posições e limites dinâmicos
+            function computeCoords(node, x, y, dx, level) {
+                if (node >= tree.length || treeRanges[node] === undefined || treeRanges[node] === null) return;
+                
+                treeNodesMeta[node] = { x, y, val: tree[node], range: treeRanges[node] };
+                
+                if (x < minX) minX = x;
+                if (x > maxX) maxX = x;
+                if (y > maxY) maxY = y;
+
+                let nextDx = Math.max(25, dx / 1.7);
+                let nextY = y + 70;
+
+                computeCoords(2 * node, x - dx, nextY, nextDx, level + 1);
+                computeCoords(2 * node + 1, x + dx, nextY, nextDx, level + 1);
+            }
+
+            // Largura inicial calculada proporcionalmente ao tamanho do array
+            let initialSpread = Math.max(300, arr.length * 55);
+            computeCoords(1, initialSpread, 45, initialSpread / 2.2, 0);
+
+            // 2. Ajuste de margens e redimensionamento do SVG
+            const padX = 80;
+            const padY = 80;
+            let offsetX = 0;
+            
+            if (minX < padX) {
+                offsetX = padX - minX;
+            }
+
+            let finalMaxX = baseW;
+            Object.values(treeNodesMeta).forEach(meta => {
+                meta.x += offsetX;
+                if (meta.x > finalMaxX) finalMaxX = meta.x;
+            });
+
+            const finalWidth = Math.max(baseW, finalMaxX + padX);
+            const finalHeight = Math.max(baseH, maxY + padY);
+
+            svg.style.width = `${finalWidth}px`;
+            svg.style.height = `${finalHeight}px`;
+            svg.setAttribute('viewBox', `0 0 ${finalWidth} ${finalHeight}`);
+
+            // 3. Desenhar Linhas
+            Object.keys(treeNodesMeta).forEach(nodeStr => {
+                let node = parseInt(nodeStr);
+                let meta = treeNodesMeta[node];
+                
+                let leftChild = 2 * node;
+                let rightChild = 2 * node + 1;
+
+                if (treeNodesMeta[leftChild]) drawLine(svg, meta.x, meta.y, treeNodesMeta[leftChild].x, treeNodesMeta[leftChild].y);
+                if (treeNodesMeta[rightChild]) drawLine(svg, meta.x, meta.y, treeNodesMeta[rightChild].x, treeNodesMeta[rightChild].y);
+            });
+
+            // 4. Desenhar Nós
+            Object.keys(treeNodesMeta).forEach(nodeStr => {
+                let node = parseInt(nodeStr);
+                let meta = treeNodesMeta[node];
+                let isHighlight = highlightNodes.includes(node);
+
+                let fill = isHighlight ? '#d97706' : '#0f172a';
+                let stroke = isHighlight ? '#fde68a' : '#f59e0b';
+
+                const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('cx', meta.x); circle.setAttribute('cy', meta.y);
+                circle.setAttribute('r', '22');
+                circle.setAttribute('fill', fill);
+                circle.setAttribute('stroke', stroke);
+                circle.setAttribute('stroke-width', '2.5');
+                if (isHighlight) circle.classList.add('pulse-glow');
+
+                const textVal = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                textVal.setAttribute('x', meta.x); textVal.setAttribute('y', meta.y - 2);
+                textVal.setAttribute('text-anchor', 'middle');
+                textVal.setAttribute('fill', '#fff');
+                textVal.setAttribute('font-size', '13');
+                textVal.setAttribute('font-weight', 'bold');
+                textVal.setAttribute('font-family', 'Fira Code');
+                textVal.textContent = meta.val;
+
+                const textRange = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                textRange.setAttribute('x', meta.x); textRange.setAttribute('y', meta.y + 14);
+                textRange.setAttribute('text-anchor', 'middle');
+                textRange.setAttribute('fill', '#94a3b8');
+                textRange.setAttribute('font-size', '9');
+                textRange.setAttribute('font-family', 'Fira Code');
+                textRange.textContent = `[${meta.range.l},${meta.range.r}]`;
+
+                group.appendChild(circle);
+                group.appendChild(textVal);
+                group.appendChild(textRange);
+                svg.appendChild(group);
+            });
+        }
+
+        function drawLine(svg, x1, y1, x2, y2) {
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+            line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+            line.setAttribute('stroke', '#334155'); line.setAttribute('stroke-width', '2');
+            svg.appendChild(line);
+        }
+
+        // --- CONSULTA ANIMADA ---
+        async function startQuery() {
+            if (isAnimating) return;
+            const lInput = document.getElementById('query-l');
+            const rInput = document.getElementById('query-r');
+            let qL = parseInt(lInput.value);
+            let qR = parseInt(rInput.value);
+
+            if (isNaN(qL) || isNaN(qR) || qL < 0 || qR >= arr.length || qL > qR) {
+                logTrace(`Consulta inválida! Insira índices entre 0 e ${arr.length - 1} com L <= R.`, 'error');
+                return;
+            }
+
+            isAnimating = true;
+            lInput.value = ''; rInput.value = '';
+            logTrace(`A consultar soma para o intervalo [${qL}, ${qR}]...`, 'active');
+
+            let activeNodes = [];
+            
+            async function query(node, start, end, l, r) {
+                if (r < start || end < l) return 0;
+                
+                activeNodes.push(node);
+                drawTreeVisual(activeNodes);
+                await sleep(getSpeed());
+
+                if (l <= start && end <= r) {
+                    logTrace(`Nó [${start}, ${end}] (Soma: ${tree[node]}) totalmente dentro do intervalo.`, 'match');
+                    return tree[node];
+                }
+
+                let mid = Math.floor((start + end) / 2);
+                let p1 = await query(2 * node, start, mid, l, r);
+                let p2 = await query(2 * node + 1, mid + 1, end, l, r);
+                return p1 + p2;
+            }
+
+            let totalSum = await query(1, 0, arr.length - 1, qL, qR);
+            logTrace(`Soma total no intervalo [${qL}, ${qR}] = <strong>${totalSum}</strong>`, 'match');
+            
+            await sleep(1000);
+            drawTreeVisual();
+            isAnimating = false;
+        }
+
+        window.onload = function() {
+            buildSegmentTree();
+        };
+        window.addEventListener('resize', () => drawTreeVisual());
+    </script>
+</body>
+</html>

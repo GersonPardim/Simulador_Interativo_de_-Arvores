@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador Interativo - PATRICIA Trie</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['Fira Code', 'monospace'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #0f172a; color: #f8fafc; font-family: 'Inter', sans-serif; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        .pulse-glow { animation: pulse-glow 2s infinite; }
+        @keyframes pulse-glow {
+            0%, 100% { filter: drop-shadow(0 0 4px rgba(99, 102, 241, 0.6)); }
+            50% { filter: drop-shadow(0 0 12px rgba(99, 102, 241, 0.9)); }
+        }
+        .cursor-grab { cursor: grab; }
+        .cursor-grabbing { cursor: grabbing !important; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between bg-slate-950 text-slate-100">
+
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50 px-4 py-3">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-emerald-600/20 text-emerald-400 rounded-xl border border-emerald-500/30">
+                    <i class="fa-solid fa-code-branch text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg text-slate-100 leading-tight">Simulador PATRICIA Trie</h1>
+                    <p class="text-xs text-slate-400">Trie Compactada por Posição de Bit (AEDS II)</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700/60">
+                    <i class="fa-solid fa-microchip text-emerald-400 mr-1"></i> Baseada em Índices Binários
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1">
+        
+        <!-- Controles -->
+        <section class="lg:col-span-4 flex flex-col gap-5">
+            <div class="bg-slate-900/90 rounded-2xl border border-slate-800 p-4 shadow-xl space-y-4">
+                <h2 class="text-sm font-bold text-slate-300 uppercase tracking-wider">1. Operações</h2>
+                
+                <div class="space-y-3">
+                    <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80 space-y-2">
+                        <label class="text-[11px] text-slate-400 font-semibold"><i class="fa-solid fa-plus text-emerald-400"></i> Inserir Chave:</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="insert-val" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-mono text-emerald-300 focus:outline-none focus:border-emerald-500" placeholder="Ex: UFOP">
+                            <button id="btn-insert" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-medium transition shadow">Inserir</button>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80 space-y-2">
+                        <label class="text-[11px] text-slate-400 font-semibold"><i class="fa-solid fa-magnifying-glass text-indigo-400"></i> Buscar Chave:</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="search-val" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-mono text-indigo-300 focus:outline-none focus:border-indigo-500" placeholder="Ex: UFOP">
+                            <button id="btn-search" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-medium transition shadow">Buscar</button>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80 space-y-2">
+                        <label class="text-[11px] text-slate-400 font-semibold"><i class="fa-solid fa-trash text-amber-400"></i> Remover Chave:</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="remove-val" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-mono text-amber-300 focus:outline-none focus:border-amber-500" placeholder="Ex: UFOP">
+                            <button id="btn-remove" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-medium transition shadow">Remover</button>
+                        </div>
+                    </div>
+
+                    <button id="btn-clear" class="w-full py-2 mt-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium border border-slate-700/50 transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-rotate-right"></i> Limpar PATRICIA Trie
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-slate-900/90 rounded-2xl border border-slate-800 p-4 shadow-xl">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Legenda de Cores</h3>
+                <div class="space-y-2 text-xs">
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-slate-800 border border-indigo-500 inline-block"></span> <span class="text-slate-300">Nó Interno (Índice do Bit)</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-emerald-600 border border-emerald-400 inline-block"></span> <span class="text-slate-300">Nó Folha (Valor Final)</span>
+                    </div>
+                    <div class="flex items-center gap-2 mt-2 pt-2 border-t border-slate-800 text-slate-400">
+                        <i class="fa-solid fa-hand-pointer mr-1"></i> <i>Clique e arraste na área escura para mover a tela</i>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Visualizador e Console -->
+        <section class="lg:col-span-8 flex flex-col gap-5">
+            <div class="bg-slate-900/90 rounded-2xl border border-slate-800 p-4 shadow-xl flex flex-col relative min-h-[420px]">
+                <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm font-bold text-slate-200">Visualizador SVG</span>
+                        <span id="bin-preview" class="text-xs px-2.5 py-0.5 rounded-full font-mono bg-slate-800 text-slate-400 border border-slate-700">Binário Atual: -</span>
+                    </div>
+                    <div class="flex items-center gap-3 text-xs text-slate-400">
+                        <i class="fa-solid fa-gauge-high"></i> Velocidade:
+                        <input type="range" id="animation-speed" min="200" max="1800" value="800" step="100" class="w-20 accent-indigo-500">
+                    </div>
+                </div>
+                <!-- Área Arrastável com Overflow -->
+                <div id="canvas-wrapper" class="w-full flex-1 relative overflow-auto min-h-[360px] cursor-grab rounded-lg bg-slate-950/50 border border-slate-800/50">
+                    <svg id="tree-svg" class="block mx-auto min-w-[550px] min-h-[350px] pointer-events-none"></svg>
+                </div>
+            </div>
+
+            <div class="bg-slate-900/90 rounded-2xl border border-slate-800 p-4 shadow-xl flex-1 flex flex-col max-h-[280px]">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-terminal text-emerald-400"></i> Rastro de Execução
+                    </h3>
+                    <button id="btn-clear-log" class="text-[11px] text-slate-400 hover:text-slate-200">Limpar Log</button>
+                </div>
+                <div id="trace-log" class="flex-1 bg-slate-950 rounded-xl p-3 border border-slate-800/80 font-mono text-xs overflow-y-auto space-y-1.5">
+                    <div class="text-slate-500 italic">Simulador carregado perfeitamente. Pode iniciar as inserções.</div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // Correção Crítica: Transforma QUALQUER coisa estritamente com base nos caracteres para garantir binários únicos
+        function toBinaryString(str) {
+            return Array.from(String(str)).map(c => c.charCodeAt(0).toString(2).padStart(8, '0')).join('');
+        }
+        
+        function getBit(binStr, index) { 
+            return index < binStr.length ? binStr[index] : '0'; 
+        }
+
+        class PatriciaNode {
+            constructor(isLeaf = false, bitIndex = -1, key = "", binKey = "") {
+                this.id = Math.random().toString(36).substr(2, 9);
+                this.isLeaf = isLeaf;
+                this.bitIndex = bitIndex; 
+                this.key = key;           
+                this.binKey = binKey;     
+                this.left = null;         
+                this.right = null;        
+            }
+        }
+
+        let root = null;
+        let isAnimating = false;
+        let treeNodesMeta = {};
+
+        function getSpeed() { 
+            const speedInput = document.getElementById('animation-speed');
+            return 2000 - (speedInput ? parseInt(speedInput.value) : 800); 
+        }
+        
+        function sleep(ms) { 
+            return new Promise(resolve => setTimeout(resolve, Math.max(0, ms))); 
+        }
+        
+        function logTrace(msg, type = 'info') {
+            const logBox = document.getElementById('trace-log');
+            if(!logBox) return;
+            const entry = document.createElement('div');
+            let color = 'text-slate-300';
+            if (type === 'match') color = 'text-emerald-400 font-semibold';
+            if (type === 'error') color = 'text-red-400';
+            if (type === 'active') color = 'text-blue-400';
+            if (type === 'warn') color = 'text-amber-400 font-semibold';
+            entry.className = `${color} flex items-start gap-1.5`;
+            entry.innerHTML = `<span class="text-slate-600 select-none">></span> <span>${msg}</span>`;
+            logBox.appendChild(entry);
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        function clearTraceLog() { document.getElementById('trace-log').innerHTML = ''; }
+        
+        function clearTree() { 
+            if (isAnimating) {
+                logTrace("Aguarde a operação atual terminar antes de limpar a árvore.", "warn");
+                return; 
+            }
+            root = null; 
+            drawTreeVisual(); 
+            clearTraceLog(); 
+            logTrace('PATRICIA Trie completamente limpa.', 'warn'); 
+        }
+
+        // --- Renderizador ---
+        function drawTreeVisual(highlightId = null, highlightColor = null) {
+            const svg = document.getElementById('tree-svg');
+            if(!svg) return;
+            svg.innerHTML = '';
+            treeNodesMeta = {};
+            
+            const wrapper = document.getElementById('canvas-wrapper');
+            const baseW = Math.max(wrapper.clientWidth, 600);
+            const baseH = Math.max(wrapper.clientHeight, 400);
+
+            if (!root) {
+                svg.style.width = '100%';
+                svg.style.height = '100%';
+                return;
+            }
+
+            let minX = Infinity;
+            let maxX = -Infinity;
+            let maxY = -Infinity;
+
+            function computeCoords(node, x, y, dx) {
+                if (!node) return;
+                treeNodesMeta[node.id] = { node, x, y };
+                
+                if (x < minX) minX = x;
+                if (x > maxX) maxX = x;
+                if (y > maxY) maxY = y;
+
+                computeCoords(node.left, x - dx, y + 70, dx / 1.6);
+                computeCoords(node.right, x + dx, y + 70, dx / 1.6);
+            }
+            
+            computeCoords(root, baseW / 2, 40, baseW / 3.2);
+
+            const padX = 60;
+            const padY = 60;
+            let offsetX = 0;
+            
+            if (minX < padX) offsetX = padX - minX;
+
+            let finalMaxX = baseW;
+            Object.values(treeNodesMeta).forEach(meta => {
+                meta.x += offsetX;
+                if (meta.x > finalMaxX) finalMaxX = meta.x;
+            });
+
+            const finalWidth = Math.max(baseW, finalMaxX + padX);
+            const finalHeight = Math.max(baseH, maxY + padY);
+
+            svg.style.width = `${finalWidth}px`;
+            svg.style.height = `${finalHeight}px`;
+            svg.setAttribute('viewBox', `0 0 ${finalWidth} ${finalHeight}`);
+
+            Object.values(treeNodesMeta).forEach(meta => {
+                if (meta.node.left) {
+                    let c = treeNodesMeta[meta.node.left.id];
+                    drawLine(svg, meta.x, meta.y, c.x, c.y, '0');
+                }
+                if (meta.node.right) {
+                    let c = treeNodesMeta[meta.node.right.id];
+                    drawLine(svg, meta.x, meta.y, c.x, c.y, '1');
+                }
+            });
+
+            Object.values(treeNodesMeta).forEach(meta => {
+                const isLeaf = meta.node.isLeaf;
+                let fill = isLeaf ? '#059669' : '#0f172a';
+                let stroke = isLeaf ? '#34d399' : '#6366f1';
+                
+                if (highlightId === meta.node.id) {
+                    fill = highlightColor === 'MATCH' ? '#10b981' : '#1e40af';
+                    stroke = highlightColor === 'MATCH' ? '#a7f3d0' : '#60a5fa';
+                }
+
+                const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('cx', meta.x); circle.setAttribute('cy', meta.y);
+                circle.setAttribute('r', isLeaf ? '24' : '20');
+                circle.setAttribute('fill', fill);
+                circle.setAttribute('stroke', stroke);
+                circle.setAttribute('stroke-width', '2');
+                if (highlightId === meta.node.id) circle.classList.add('pulse-glow');
+                
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', meta.x); text.setAttribute('y', meta.y + 4);
+                text.setAttribute('text-anchor', 'middle');
+                text.setAttribute('fill', '#fff');
+                text.setAttribute('font-size', '12');
+                text.setAttribute('font-weight', 'bold');
+                text.setAttribute('font-family', 'Fira Code');
+                text.textContent = isLeaf ? meta.node.key : `b:${meta.node.bitIndex}`;
+
+                group.appendChild(circle);
+                group.appendChild(text);
+                svg.appendChild(group);
+            });
+
+            if (highlightId && treeNodesMeta[highlightId]) {
+                const hMeta = treeNodesMeta[highlightId];
+                const scrollTargetX = hMeta.x - (wrapper.clientWidth / 2);
+                const scrollTargetY = hMeta.y - (wrapper.clientHeight / 2) + 50;
+                
+                wrapper.scrollTo({
+                    left: Math.max(0, scrollTargetX),
+                    top: Math.max(0, scrollTargetY),
+                    behavior: 'smooth'
+                });
+            } else if (!highlightId && wrapper.scrollLeft === 0) {
+                wrapper.scrollTo({ left: (finalWidth - wrapper.clientWidth) / 2, top: 0, behavior: 'smooth' });
+            }
+        }
+
+        function drawLine(svg, x1, y1, x2, y2, label) {
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+            line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+            line.setAttribute('stroke', '#334155'); line.setAttribute('stroke-width', '2');
+            svg.appendChild(line);
+
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', (x1 + x2) / 2);
+            text.setAttribute('y', ((y1 + y2) / 2) - 8);
+            text.setAttribute('fill', '#94a3b8');
+            text.setAttribute('font-size', '11');
+            text.setAttribute('font-weight', 'bold');
+            text.setAttribute('font-family', 'Fira Code');
+            text.textContent = label;
+            svg.appendChild(text);
+        }
+
+        // --- Algoritmos Corrigidos ---
+        async function startInsert() {
+            if (isAnimating) {
+                logTrace("Por favor, aguarde a operação atual terminar...", "warn");
+                return;
+            }
+            const inputEl = document.getElementById('insert-val');
+            const val = inputEl.value.trim();
+            if (!val) {
+                logTrace("O campo não pode estar vazio para inserir.", "warn");
+                return;
+            }
+            
+            try {
+                isAnimating = true;
+                inputEl.value = '';
+                
+                const binVal = toBinaryString(val);
+                document.getElementById('bin-preview').innerText = `Binário: ${binVal}`;
+                logTrace(`Inserindo <strong>${val}</strong> (${binVal})...`);
+
+                if (!root) {
+                    root = new PatriciaNode(true, -1, val, binVal);
+                    drawTreeVisual(root.id, 'MATCH');
+                    logTrace(`Árvore vazia. Folha criada como raiz.`, 'match');
+                    return;
+                }
+
+                let curr = root;
+                while (!curr.isLeaf) {
+                    drawTreeVisual(curr.id, 'ACTIVE');
+                    await sleep(getSpeed());
+                    let b = getBit(binVal, curr.bitIndex);
+                    curr = (b === '0') ? curr.left : curr.right;
+                }
+
+                drawTreeVisual(curr.id, 'ACTIVE');
+                await sleep(getSpeed());
+
+                if (curr.key === val) {
+                    logTrace(`A chave ${val} já existe na árvore!`, 'error');
+                    drawTreeVisual();
+                    return;
+                }
+
+                let diffBit = 0;
+                let maxLen = Math.max(curr.binKey.length, binVal.length);
+                
+                while (diffBit < maxLen && getBit(curr.binKey, diffBit) === getBit(binVal, diffBit)) {
+                    diffBit++;
+                }
+                
+                if (diffBit === maxLen && curr.binKey === binVal) {
+                    logTrace(`Conflito: A representação binária de '${val}' é igual à de '${curr.key}'. Ignorado para manter a segurança.`, 'error');
+                    return;
+                }
+
+                logTrace(`Primeiro bit diferente entre '${curr.key}' e '${val}' é o [${diffBit}].`, 'active');
+
+                let parent = null;
+                let target = root;
+                while (!target.isLeaf && target.bitIndex < diffBit) {
+                    parent = target;
+                    let b = getBit(binVal, target.bitIndex);
+                    target = (b === '0') ? target.left : target.right;
+                }
+
+                let newNode = new PatriciaNode(true, -1, val, binVal);
+                let internalNode = new PatriciaNode(false, diffBit);
+                
+                let bNew = getBit(binVal, diffBit);
+                if (bNew === '0') {
+                    internalNode.left = newNode;
+                    internalNode.right = target;
+                } else {
+                    internalNode.left = target;
+                    internalNode.right = newNode;
+                }
+
+                if (!parent) {
+                    root = internalNode;
+                } else {
+                    let pBit = getBit(binVal, parent.bitIndex);
+                    if (pBit === '0') parent.left = internalNode;
+                    else parent.right = internalNode;
+                }
+
+                drawTreeVisual(newNode.id, 'MATCH');
+                logTrace(`Inserção concluída! Nó interno b:${diffBit} criado.`, 'match');
+            } catch (err) {
+                logTrace("Erro no sistema: " + err.message, 'error');
+            } finally {
+                isAnimating = false;
+            }
+        }
+
+        async function startSearch() {
+            if (isAnimating) { logTrace("Aguarde a operação atual...", "warn"); return; }
+            if (!root) { logTrace("A árvore está vazia.", "warn"); return; }
+            
+            const inputEl = document.getElementById('search-val');
+            const val = inputEl.value.trim();
+            if (!val) return;
+            
+            try {
+                isAnimating = true;
+                inputEl.value = '';
+                
+                const binVal = toBinaryString(val);
+                document.getElementById('bin-preview').innerText = `Binário: ${binVal}`;
+                logTrace(`Buscando <strong>${val}</strong> (${binVal})...`);
+                
+                let curr = root;
+                while (!curr.isLeaf) {
+                    drawTreeVisual(curr.id, 'ACTIVE');
+                    logTrace(`Nó interno. Testando bit [${curr.bitIndex}]...`, 'active');
+                    await sleep(getSpeed());
+                    
+                    let b = getBit(binVal, curr.bitIndex);
+                    curr = (b === '0') ? curr.left : curr.right;
+                }
+
+                drawTreeVisual(curr.id, 'ACTIVE');
+                await sleep(getSpeed());
+                
+                if (curr.key === val) {
+                    drawTreeVisual(curr.id, 'MATCH');
+                    logTrace(`Chave <strong>${val}</strong> encontrada!`, 'match');
+                } else {
+                    drawTreeVisual();
+                    logTrace(`Chegou na folha '${curr.key}', logo '${val}' NÃO existe.`, 'error');
+                }
+            } catch (err) {
+                logTrace("Erro: " + err.message, 'error');
+            } finally {
+                isAnimating = false;
+            }
+        }
+
+        async function startRemove() {
+            if (isAnimating) { logTrace("Aguarde a operação atual...", "warn"); return; }
+            if (!root) return;
+            
+            const inputEl = document.getElementById('remove-val');
+            const val = inputEl.value.trim();
+            if (!val) return;
+            
+            try {
+                isAnimating = true;
+                inputEl.value = '';
+                
+                const binVal = toBinaryString(val);
+                document.getElementById('bin-preview').innerText = `Binário: ${binVal}`;
+                logTrace(`Removendo <strong>${val}</strong> (${binVal})...`);
+
+                if (root.isLeaf && root.key === val) {
+                    root = null;
+                    drawTreeVisual();
+                    logTrace(`A raiz era a folha '${val}'. Árvore vazia.`, 'warn');
+                    return;
+                }
+
+                let parent = null;
+                let curr = root;
+                let grandParent = null;
+
+                while (!curr.isLeaf) {
+                    drawTreeVisual(curr.id, 'ACTIVE');
+                    await sleep(getSpeed());
+                    grandParent = parent;
+                    parent = curr;
+                    let b = getBit(binVal, curr.bitIndex);
+                    curr = (b === '0') ? curr.left : curr.right;
+                }
+
+                if (curr.key !== val) {
+                    logTrace(`Chave '${val}' não encontrada para remoção.`, 'error');
+                    drawTreeVisual();
+                    return;
+                }
+
+                let sibling = (parent.left === curr) ? parent.right : parent.left;
+
+                if (!grandParent) {
+                    root = sibling;
+                } else {
+                    if (grandParent.left === parent) grandParent.left = sibling;
+                    else grandParent.right = sibling;
+                }
+
+                drawTreeVisual();
+                logTrace(`Nó folha '${val}' e o respetivo nó interno removidos.`, 'warn');
+            } catch (err) {
+                logTrace("Erro na remoção: " + err.message, 'error');
+            } finally {
+                isAnimating = false;
+            }
+        }
+
+        // --- Configuração e Eventos ---
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('btn-insert').addEventListener('click', startInsert);
+            document.getElementById('btn-search').addEventListener('click', startSearch);
+            document.getElementById('btn-remove').addEventListener('click', startRemove);
+            document.getElementById('btn-clear').addEventListener('click', clearTree);
+            document.getElementById('btn-clear-log').addEventListener('click', clearTraceLog);
+
+            const inputs = [
+                { id: 'insert-val', func: startInsert },
+                { id: 'search-val', func: startSearch },
+                { id: 'remove-val', func: startRemove }
+            ];
+            inputs.forEach(item => {
+                const el = document.getElementById(item.id);
+                if (el) {
+                    el.addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter') item.func();
+                    });
+                }
+            });
+
+            // Lógica de Mouse Drag (Arrastar para Navegar)
+            const wrapper = document.getElementById('canvas-wrapper');
+            let isDown = false;
+            let startX, startY, scrollLeft, scrollTop;
+
+            wrapper.addEventListener('mousedown', (e) => {
+                isDown = true;
+                wrapper.classList.add('cursor-grabbing');
+                startX = e.pageX - wrapper.offsetLeft;
+                startY = e.pageY - wrapper.offsetTop;
+                scrollLeft = wrapper.scrollLeft;
+                scrollTop = wrapper.scrollTop;
+            });
+            wrapper.addEventListener('mouseleave', () => {
+                isDown = false;
+                wrapper.classList.remove('cursor-grabbing');
+            });
+            wrapper.addEventListener('mouseup', () => {
+                isDown = false;
+                wrapper.classList.remove('cursor-grabbing');
+            });
+            wrapper.addEventListener('mousemove', (e) => {
+                if (!isDown) return;
+                e.preventDefault();
+                const x = e.pageX - wrapper.offsetLeft;
+                const y = e.pageY - wrapper.offsetTop;
+                const walkX = (x - startX) * 1.5;
+                const walkY = (y - startY) * 1.5;
+                wrapper.scrollLeft = scrollLeft - walkX;
+                wrapper.scrollTop = scrollTop - walkY;
+            });
+
+            window.addEventListener('resize', () => drawTreeVisual());
+            drawTreeVisual();
+        });
+    </script>
+</body>
+</html>
