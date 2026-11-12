@@ -38,13 +38,13 @@
                     <i class="fa-solid fa-code-merge text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="font-bold text-lg text-slate-100 leading-tight">Simulador Radix Tree Universal</h1>
+                    <h1 class="font-bold text-lg text-slate-100 leading-tight">Simulador Radix Tree</h1>
                     <p class="text-xs text-slate-400">Trie Compactada por Blocos de Caracteres (AEDS II)</p>
                 </div>
             </div>
             <div class="flex items-center gap-2">
                 <span class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700/60">
-                    <i class="fa-solid fa-compress text-sky-400 mr-1"></i> Compactação de Ramos
+                    <i class="fa-solid fa-compress text-sky-400 mr-1"></i> Compactação Estável
                 </span>
             </div>
         </div>
@@ -117,7 +117,7 @@
                     <button onclick="clearTraceLog()" class="text-[11px] text-slate-400 hover:text-slate-200">Limpar Log</button>
                 </div>
                 <div id="trace-log" class="flex-1 bg-slate-950 rounded-xl p-3 border border-slate-800/80 font-mono text-xs overflow-y-auto space-y-1.5">
-                    <div class="text-slate-500 italic">Radix Tree universal inicializada.</div>
+                    <div class="text-slate-500 italic">Radix Tree pronta.</div>
                 </div>
             </div>
         </section>
@@ -147,7 +147,7 @@
             constructor(prefix = '') {
                 this.id = Math.random().toString(36).substr(2, 9);
                 this.prefix = prefix;
-                this.children = {}; // Mapeia o 1º caractere do prefixo filho para o nó
+                this.children = []; // Lista de nós filhos para evitar conflitos de dicionário
                 this.isEnd = false;
             }
         }
@@ -187,7 +187,7 @@
             function assignLevels(node, depth) {
                 if (!levels[depth]) levels[depth] = [];
                 levels[depth].push(node);
-                Object.values(node.children).forEach(child => assignLevels(child, depth + 1));
+                node.children.forEach(child => assignLevels(child, depth + 1));
             }
             assignLevels(root, 0);
 
@@ -214,7 +214,7 @@
 
             function drawEdges(node) {
                 let p1 = nodePositions[node.id];
-                Object.values(node.children).forEach(child => {
+                node.children.forEach(child => {
                     let p2 = nodePositions[child.id];
                     if (p1 && p2) {
                         drawLine(svg, p1.x, p1.y, p2.x, p2.y, child.prefix);
@@ -279,57 +279,51 @@
             svg.appendChild(text);
         }
 
-        // --- ALGORITMO UNIVERSAL DE INSERÇÃO NA RADIX TREE ---
-        function insertRadixUniversal(currNode, word) {
-            let firstChar = word[0];
-            let child = currNode.children[firstChar];
+        // --- INSERÇÃO RADIX BLINDADA COM LISTA DE FILHOS ---
+        function insertRadixSafe(currNode, word) {
+            for (let i = 0; i < currNode.children.length; i++) {
+                let child = currNode.children[i];
+                let idx = commonPrefixLength(child.prefix, word);
 
-            // Caso A: Não existe nenhum filho com este caractere inicial. Cria o nó direto.
-            if (!child) {
-                let newNode = new RadixNode(word);
-                newNode.isEnd = true;
-                currNode.children[firstChar] = newNode;
-                return;
+                if (idx > 0) {
+                    if (idx === child.prefix.length) {
+                        let remainder = word.substring(idx);
+                        if (remainder === "") {
+                            child.isEnd = true;
+                        } else {
+                            insertRadixSafe(child, remainder);
+                        }
+                        return;
+                    } else {
+                        // Split seguro do nó sem perder referências de array
+                        let common = child.prefix.substring(0, idx);
+                        let remainderChild = child.prefix.substring(idx);
+                        let remainderWord = word.substring(idx);
+
+                        let intersectionNode = new RadixNode(common);
+                        intersectionNode.isEnd = false;
+
+                        child.prefix = remainderChild;
+                        intersectionNode.children.push(child);
+
+                        if (remainderWord === "") {
+                            intersectionNode.isEnd = true;
+                        } else {
+                            let newLeaf = new RadixNode(remainderWord);
+                            newLeaf.isEnd = true;
+                            intersectionNode.children.push(newLeaf);
+                        }
+
+                        currNode.children[i] = intersectionNode;
+                        return;
+                    }
+                }
             }
 
-            let idx = commonPrefixLength(child.prefix, word);
-
-            // Caso B: O prefixo do filho coincide exatamente com o início da palavra
-            if (idx === child.prefix.length) {
-                let remainder = word.substring(idx);
-                if (remainder === "") {
-                    child.isEnd = true;
-                } else {
-                    insertRadixUniversal(child, remainder);
-                }
-            } 
-            // Caso C: Há divergência parcial (Necessita de Split do nó existente)
-            else {
-                let commonPart = child.prefix.substring(0, idx);
-                let remainderChild = child.prefix.substring(idx);
-                let remainderWord = word.substring(idx);
-
-                // Cria o novo nó intermediário com a parte comum
-                let intersectionNode = new RadixNode(commonPart);
-                intersectionNode.isEnd = false;
-
-                // Reajusta o filho antigo com o resto dele e anexa ao intermediário
-                child.prefix = remainderChild;
-                intersectionNode.children[remainderChild[0]] = child;
-
-                // Insere a nova palavra (ou o resto dela) no nó intermediário
-                if (remainderWord === "") {
-                    intersectionNode.isEnd = true;
-                } else {
-                    let newLeaf = new RadixNode(remainderWord);
-                    newLeaf.isEnd = true;
-                    intersectionNode.children[remainderWord[0]] = newLeaf;
-                }
-
-                // Substitui a ligação no pai antigo
-                currNode.children[commonPart[0]] = intersectionNode;
-                delete currNode.children[firstChar];
-            }
+            // Se não encontrou prefixo comum com nenhum filho, adiciona novo ramo
+            let newNode = new RadixNode(word);
+            newNode.isEnd = true;
+            currNode.children.push(newNode);
         }
 
         async function startInsert() {
@@ -342,7 +336,7 @@
             input.value = '';
             logTrace(`A inserir "<strong>${word}</strong>"...`, 'active');
 
-            insertRadixUniversal(root, word);
+            insertRadixSafe(root, word);
             
             logTrace(`Palavra "<strong>${word}</strong>" inserida com sucesso!`, 'match');
             drawTreeVisual();
@@ -368,15 +362,18 @@
                 drawTreeVisual(curr.id);
                 await sleep(getSpeed());
 
-                let firstChar = searchWord[0];
-                let child = curr.children[firstChar];
-
-                if (!child || !searchWord.startsWith(child.prefix)) {
-                    break;
+                let matchedChild = null;
+                for (let child of curr.children) {
+                    if (searchWord.startsWith(child.prefix)) {
+                        matchedChild = child;
+                        break;
+                    }
                 }
 
-                curr = child;
-                searchWord = searchWord.substring(child.prefix.length);
+                if (!matchedChild) break;
+
+                curr = matchedChild;
+                searchWord = searchWord.substring(curr.prefix.length);
 
                 if (searchWord === "" && curr.isEnd) {
                     found = true;
