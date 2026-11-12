@@ -38,7 +38,7 @@
                     <i class="fa-solid fa-code-merge text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="font-bold text-lg text-slate-100 leading-tight">Simulador Radix Tree</h1>
+                    <h1 class="font-bold text-lg text-slate-100 leading-tight">Simulador Radix Tree Universal</h1>
                     <p class="text-xs text-slate-400">Trie Compactada por Blocos de Caracteres (AEDS II)</p>
                 </div>
             </div>
@@ -52,7 +52,6 @@
 
     <main class="max-w-7xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1">
         
-        <!-- Controles -->
         <section class="lg:col-span-4 flex flex-col gap-5">
             <div class="bg-slate-900/90 rounded-2xl border border-slate-800 p-4 shadow-xl space-y-4">
                 <h2 class="text-sm font-bold text-slate-300 uppercase tracking-wider">1. Operações</h2>
@@ -61,7 +60,7 @@
                     <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80 space-y-2">
                         <label class="text-[11px] text-slate-400 font-semibold"><i class="fa-solid fa-plus text-emerald-400"></i> Inserir Palavra:</label>
                         <div class="flex gap-2">
-                            <input type="text" id="insert-val" onkeypress="if(event.key === 'Enter') startInsert()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-mono text-emerald-300 focus:outline-none focus:border-emerald-500" placeholder="Ex: romano">
+                            <input type="text" id="insert-val" onkeypress="if(event.key === 'Enter') startInsert()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-mono text-emerald-300 focus:outline-none focus:border-emerald-500" placeholder="Ex: casamento">
                             <button onclick="startInsert()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-medium transition shadow">Inserir</button>
                         </div>
                     </div>
@@ -69,7 +68,7 @@
                     <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80 space-y-2">
                         <label class="text-[11px] text-slate-400 font-semibold"><i class="fa-solid fa-magnifying-glass text-sky-400"></i> Buscar Palavra:</label>
                         <div class="flex gap-2">
-                            <input type="text" id="search-val" onkeypress="if(event.key === 'Enter') startSearch()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-mono text-sky-300 focus:outline-none focus:border-sky-500" placeholder="Ex: roma">
+                            <input type="text" id="search-val" onkeypress="if(event.key === 'Enter') startSearch()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-mono text-sky-300 focus:outline-none focus:border-sky-500" placeholder="Ex: casa">
                             <button onclick="startSearch()" class="px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded-lg text-xs font-medium transition shadow">Buscar</button>
                         </div>
                     </div>
@@ -93,7 +92,6 @@
             </div>
         </section>
 
-        <!-- Visualizador e Console -->
         <section class="lg:col-span-8 flex flex-col gap-5">
             <div class="bg-slate-900/90 rounded-2xl border border-slate-800 p-4 shadow-xl flex flex-col relative min-h-[420px]">
                 <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
@@ -119,7 +117,7 @@
                     <button onclick="clearTraceLog()" class="text-[11px] text-slate-400 hover:text-slate-200">Limpar Log</button>
                 </div>
                 <div id="trace-log" class="flex-1 bg-slate-950 rounded-xl p-3 border border-slate-800/80 font-mono text-xs overflow-y-auto space-y-1.5">
-                    <div class="text-slate-500 italic">Radix Tree inicializada. Insira a primeira palavra.</div>
+                    <div class="text-slate-500 italic">Radix Tree universal inicializada.</div>
                 </div>
             </div>
         </section>
@@ -149,7 +147,7 @@
             constructor(prefix = '') {
                 this.id = Math.random().toString(36).substr(2, 9);
                 this.prefix = prefix;
-                this.children = {};
+                this.children = {}; // Mapeia o 1º caractere do prefixo filho para o nó
                 this.isEnd = false;
             }
         }
@@ -165,7 +163,7 @@
             logTrace("Radix Tree limpa com sucesso.", "warn");
         }
 
-        function commonPrefix(str1, str2) {
+        function commonPrefixLength(str1, str2) {
             let i = 0;
             while (i < str1.length && i < str2.length && str1[i] === str2[i]) {
                 i++;
@@ -173,7 +171,6 @@
             return i;
         }
 
-        // --- RENDERIZAÇÃO SVG DINÂMICA ---
         let treeNodesMeta = {};
 
         function drawTreeVisual(highlightId = null) {
@@ -247,7 +244,6 @@
                 circle.setAttribute('fill', fill);
                 circle.setAttribute('stroke', stroke);
                 circle.setAttribute('stroke-width', '2.5');
-                if (isHighlight) circle.classList.add('pulse-glow');
 
                 const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
                 text.setAttribute('x', meta.x); text.setAttribute('y', meta.y + 4);
@@ -283,46 +279,57 @@
             svg.appendChild(text);
         }
 
-        // --- INSERÇÃO RADIX ROBUSTA ---
-        function insertRadix(node, word) {
-            let keys = Object.keys(node.children);
-            for (let k of keys) {
-                let child = node.children[k];
-                let idx = commonPrefix(child.prefix, word);
+        // --- ALGORITMO UNIVERSAL DE INSERÇÃO NA RADIX TREE ---
+        function insertRadixUniversal(currNode, word) {
+            let firstChar = word[0];
+            let child = currNode.children[firstChar];
 
-                if (idx > 0) {
-                    if (idx === child.prefix.length) {
-                        return insertRadix(child, word.substring(idx));
-                    } else {
-                        // Split do nó
-                        let common = child.prefix.substring(0, idx);
-                        let remainderChild = child.prefix.substring(idx);
-                        let remainderWord = word.substring(idx);
-
-                        let newNode = new RadixNode(common);
-                        newNode.isEnd = false;
-
-                        child.prefix = remainderChild;
-                        newNode.children[remainderChild[0]] = child;
-
-                        if (remainderWord === "") {
-                            newNode.isEnd = true;
-                        } else {
-                            let newChild = new RadixNode(remainderWord);
-                            newChild.isEnd = true;
-                            newNode.children[remainderWord[0]] = newChild;
-                        }
-
-                        node.children[common[0]] = newNode;
-                        delete node.children[k];
-                        return;
-                    }
-                }
+            // Caso A: Não existe nenhum filho com este caractere inicial. Cria o nó direto.
+            if (!child) {
+                let newNode = new RadixNode(word);
+                newNode.isEnd = true;
+                currNode.children[firstChar] = newNode;
+                return;
             }
 
-            let newNode = new RadixNode(word);
-            newNode.isEnd = true;
-            node.children[word[0]] = newNode;
+            let idx = commonPrefixLength(child.prefix, word);
+
+            // Caso B: O prefixo do filho coincide exatamente com o início da palavra
+            if (idx === child.prefix.length) {
+                let remainder = word.substring(idx);
+                if (remainder === "") {
+                    child.isEnd = true;
+                } else {
+                    insertRadixUniversal(child, remainder);
+                }
+            } 
+            // Caso C: Há divergência parcial (Necessita de Split do nó existente)
+            else {
+                let commonPart = child.prefix.substring(0, idx);
+                let remainderChild = child.prefix.substring(idx);
+                let remainderWord = word.substring(idx);
+
+                // Cria o novo nó intermediário com a parte comum
+                let intersectionNode = new RadixNode(commonPart);
+                intersectionNode.isEnd = false;
+
+                // Reajusta o filho antigo com o resto dele e anexa ao intermediário
+                child.prefix = remainderChild;
+                intersectionNode.children[remainderChild[0]] = child;
+
+                // Insere a nova palavra (ou o resto dela) no nó intermediário
+                if (remainderWord === "") {
+                    intersectionNode.isEnd = true;
+                } else {
+                    let newLeaf = new RadixNode(remainderWord);
+                    newLeaf.isEnd = true;
+                    intersectionNode.children[remainderWord[0]] = newLeaf;
+                }
+
+                // Substitui a ligação no pai antigo
+                currNode.children[commonPart[0]] = intersectionNode;
+                delete currNode.children[firstChar];
+            }
         }
 
         async function startInsert() {
@@ -335,7 +342,7 @@
             input.value = '';
             logTrace(`A inserir "<strong>${word}</strong>"...`, 'active');
 
-            insertRadix(root, word);
+            insertRadixUniversal(root, word);
             
             logTrace(`Palavra "<strong>${word}</strong>" inserida com sucesso!`, 'match');
             drawTreeVisual();
@@ -357,27 +364,22 @@
             let found = false;
             let searchWord = word;
 
-            while (true) {
+            while (searchWord.length > 0) {
                 drawTreeVisual(curr.id);
                 await sleep(getSpeed());
 
-                let keys = Object.keys(curr.children);
-                let matched = false;
+                let firstChar = searchWord[0];
+                let child = curr.children[firstChar];
 
-                for (let k of keys) {
-                    let child = curr.children[k];
-                    if (searchWord.startsWith(child.prefix)) {
-                        curr = child;
-                        searchWord = searchWord.substring(child.prefix.length);
-                        matched = true;
-                        break;
-                    }
+                if (!child || !searchWord.startsWith(child.prefix)) {
+                    break;
                 }
 
-                if (!matched) break;
-                if (searchWord === "") {
-                    if (curr.isEnd) found = true;
-                    break;
+                curr = child;
+                searchWord = searchWord.substring(child.prefix.length);
+
+                if (searchWord === "" && curr.isEnd) {
+                    found = true;
                 }
             }
 
@@ -393,9 +395,7 @@
             isAnimating = false;
         }
 
-        window.onload = function() {
-            drawTreeVisual();
-        };
+        window.onload = () => drawTreeVisual();
         window.addEventListener('resize', () => drawTreeVisual());
     </script>
 </body>
