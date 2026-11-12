@@ -11,11 +11,7 @@
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['Fira Code', 'monospace'] },
-                    colors: {
-                        brand: { 50: '#eef2ff', 100: '#e0e7ff', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca', 900: '#312e81' },
-                        rb: { red: '#dc2626', redBorder: '#ef4444', black: '#0f172a', blackBorder: '#475569' }
-                    }
+                    fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['Fira Code', 'monospace'] }
                 }
             }
         }
@@ -26,12 +22,10 @@
         ::-webkit-scrollbar-track { background: #1e293b; }
         ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #64748b; }
-        .tree-line { transition: stroke 0.4s ease, stroke-width 0.4s ease; }
-        .node-circle { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         .pulse-glow { animation: pulse-glow 2s infinite; }
         @keyframes pulse-glow {
-            0%, 100% { filter: drop-shadow(0 0 4px rgba(99, 102, 241, 0.6)); }
-            50% { filter: drop-shadow(0 0 12px rgba(99, 102, 241, 0.9)); }
+            0%, 100% { filter: drop-shadow(0 0 4px rgba(239, 68, 68, 0.6)); }
+            50% { filter: drop-shadow(0 0 12px rgba(239, 68, 68, 0.9)); }
         }
     </style>
 </head>
@@ -45,7 +39,7 @@
                 </div>
                 <div>
                     <h1 class="font-bold text-lg text-slate-100 leading-tight">Simulador de Árvore Rubro-Negra</h1>
-                    <p class="text-xs text-slate-400">Visualizador Interativo para Apresentação de AEDS II</p>
+                    <p class="text-xs text-slate-400">Balanceamento Automático e Rotações (AEDS II)</p>
                 </div>
             </div>
             <div class="flex items-center gap-2">
@@ -58,94 +52,74 @@
 
     <main class="max-w-7xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1">
         
-        <!-- Painel Esquerdo: Controles -->
+        <!-- Controles -->
         <section class="lg:col-span-4 flex flex-col gap-5">
             <div class="bg-slate-900/90 rounded-2xl border border-slate-800 p-4 shadow-xl space-y-4">
-                <h2 class="text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between">
-                    <span>1. Operações da Árvore</span>
-                </h2>
+                <h2 class="text-sm font-bold text-slate-300 uppercase tracking-wider">1. Operações</h2>
                 
                 <div class="space-y-3">
-                    <!-- Inserir -->
                     <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80 space-y-2">
                         <label class="text-[11px] text-slate-400 font-semibold"><i class="fa-solid fa-plus text-emerald-400"></i> Inserir Nó:</label>
                         <div class="flex gap-2">
-                            <input type="number" id="insert-val" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-mono text-emerald-300 focus:outline-none focus:border-emerald-500" placeholder="Ex: 15">
+                            <input type="number" id="insert-val" onkeypress="if(event.key === 'Enter') startInsert()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-mono text-emerald-300 focus:outline-none focus:border-emerald-500" placeholder="Ex: 15">
                             <button onclick="startInsert()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-medium transition shadow">Inserir</button>
                         </div>
                     </div>
 
-                    <!-- Buscar -->
                     <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80 space-y-2">
                         <label class="text-[11px] text-slate-400 font-semibold"><i class="fa-solid fa-magnifying-glass text-indigo-400"></i> Buscar Nó:</label>
                         <div class="flex gap-2">
-                            <input type="number" id="search-val" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-mono text-indigo-300 focus:outline-none focus:border-indigo-500" placeholder="Ex: 15">
+                            <input type="number" id="search-val" onkeypress="if(event.key === 'Enter') startSearch()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-mono text-indigo-300 focus:outline-none focus:border-indigo-500" placeholder="Ex: 15">
                             <button onclick="startSearch()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-medium transition shadow">Buscar</button>
                         </div>
                     </div>
 
-                    <!-- Remover -->
-                    <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80 space-y-2">
-                        <label class="text-[11px] text-slate-400 font-semibold"><i class="fa-solid fa-trash text-amber-400"></i> Remover Nó (BST Básica):</label>
-                        <div class="flex gap-2">
-                            <input type="number" id="remove-val" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-mono text-amber-300 focus:outline-none focus:border-amber-500" placeholder="Ex: 15">
-                            <button onclick="startRemove()" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-medium transition shadow">Remover</button>
-                        </div>
-                    </div>
-
                     <button onclick="clearTree()" class="w-full py-2 mt-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium border border-slate-700/50 transition flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-rotate-right"></i> Limpar Árvore Inteira
+                        <i class="fa-solid fa-rotate-right"></i> Limpar Árvore
                     </button>
                 </div>
             </div>
 
-            <!-- Legenda -->
             <div class="bg-slate-900/90 rounded-2xl border border-slate-800 p-4 shadow-xl">
                 <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Legenda de Cores</h3>
-                <div class="grid grid-cols-2 gap-2 text-xs">
+                <div class="space-y-2 text-xs">
                     <div class="flex items-center gap-2">
                         <span class="w-3 h-3 rounded-full bg-red-600 inline-block shadow-sm"></span> <span class="text-slate-300">Nó Vermelho</span>
                     </div>
                     <div class="flex items-center gap-2">
                         <span class="w-3 h-3 rounded-full bg-slate-800 border border-slate-500 inline-block shadow-sm"></span> <span class="text-slate-300">Nó Preto</span>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <span class="w-3 h-3 rounded-full bg-blue-500 inline-block shadow-sm"></span> <span class="text-slate-300">Caminho Atual</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <span class="w-3 h-3 rounded-full bg-emerald-500 inline-block shadow-sm"></span> <span class="text-slate-300">Encontrado</span>
-                    </div>
                 </div>
             </div>
         </section>
 
-        <!-- Painel Direito: Visualizador e Log -->
+        <!-- Visualizador e Console -->
         <section class="lg:col-span-8 flex flex-col gap-5">
             <div class="bg-slate-900/90 rounded-2xl border border-slate-800 p-4 shadow-xl flex flex-col relative min-h-[420px]">
                 <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
                     <div class="flex items-center gap-2">
-                        <span class="text-sm font-bold text-slate-200">Visualizador SVG</span>
-                        <span id="operation-status" class="hidden text-xs px-2.5 py-0.5 rounded-full font-mono bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">Aguardando</span>
+                        <span class="text-sm font-bold text-slate-200">Árvore Rubro-Negra (Balanceada)</span>
                     </div>
                     <div class="flex items-center gap-3 text-xs text-slate-400">
                         <i class="fa-solid fa-gauge-high"></i> Velocidade:
-                        <input type="range" id="animation-speed" min="200" max="1800" value="800" step="100" class="w-20 accent-indigo-500">
+                        <input type="range" id="animation-speed" min="100" max="1500" value="600" step="100" class="w-20 accent-red-500">
                     </div>
                 </div>
-                <div id="canvas-wrapper" class="w-full flex-1 relative flex items-center justify-center overflow-auto min-h-[360px]">
-                    <svg id="tree-svg" class="w-full h-full min-w-[550px] min-h-[350px]"></svg>
+                
+                <div id="canvas-wrapper" class="w-full flex-1 relative flex items-center justify-center bg-slate-950 rounded-lg border border-slate-800/80 overflow-auto min-h-[360px]">
+                    <svg id="tree-svg" class="block mx-auto min-w-[600px] min-h-[350px]"></svg>
                 </div>
             </div>
 
-            <div class="bg-slate-900/90 rounded-2xl border border-slate-800 p-4 shadow-xl flex-1 flex flex-col max-h-[280px]">
+            <div class="bg-slate-900/90 rounded-2xl border border-slate-800 p-4 shadow-xl flex-1 flex flex-col max-h-[220px]">
                 <div class="flex items-center justify-between mb-2">
                     <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                        <i class="fa-solid fa-terminal text-indigo-400"></i> <span>Rastro de Execução (Console)</span>
+                        <i class="fa-solid fa-terminal text-red-400"></i> Rastro de Execução
                     </h3>
                     <button onclick="clearTraceLog()" class="text-[11px] text-slate-400 hover:text-slate-200">Limpar Log</button>
                 </div>
                 <div id="trace-log" class="flex-1 bg-slate-950 rounded-xl p-3 border border-slate-800/80 font-mono text-xs overflow-y-auto space-y-1.5">
-                    <div class="text-slate-500 italic">Árvore vazia. Insira nós para começar.</div>
+                    <div class="text-slate-500 italic">Árvore vazia. Insira nós para iniciar o balanceamento.</div>
                 </div>
             </div>
         </section>
@@ -154,6 +128,7 @@
     <script>
         const RED = 'RED';
         const BLACK = 'BLACK';
+
         class Node {
             constructor(val) {
                 this.val = val;
@@ -167,95 +142,127 @@
 
         let root = null;
         let isAnimating = false;
-        let treeNodesMeta = {};
 
-        function getSpeed() { return 2000 - parseInt(document.getElementById('animation-speed').value); }
-        function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
-        
         function logTrace(msg, type = 'info') {
             const logBox = document.getElementById('trace-log');
+            if(!logBox) return;
             const entry = document.createElement('div');
             let color = 'text-slate-300';
             if (type === 'match') color = 'text-emerald-400 font-semibold';
             if (type === 'error') color = 'text-red-400';
             if (type === 'active') color = 'text-blue-400';
-            if (type === 'warn') color = 'text-amber-400';
-            entry.className = `${color} leading-relaxed flex items-start gap-1.5`;
+            if (type === 'warn') color = 'text-amber-400 font-semibold';
+            entry.className = `${color} flex items-start gap-1.5 leading-relaxed`;
             entry.innerHTML = `<span class="text-slate-600 select-none">></span> <span>${msg}</span>`;
             logBox.appendChild(entry);
             logBox.scrollTop = logBox.scrollHeight;
         }
 
         function clearTraceLog() { document.getElementById('trace-log').innerHTML = ''; }
-        function clearTree() { if (isAnimating) return; root = null; drawTreeVisual(); clearTraceLog(); logTrace('Árvore reiniciada.', 'warn'); }
+        function getSpeed() { return 1600 - parseInt(document.getElementById('animation-speed').value); }
+        function sleep(ms) { return new Promise(resolve => setTimeout(resolve, Math.max(0, ms))); }
 
-        // --- Renderização Dinâmica SVG ---
+        function clearTree() {
+            if(isAnimating) return;
+            root = null;
+            drawTreeVisual();
+            clearTraceLog();
+            logTrace("Árvore Rubro-Negra limpa.", "warn");
+        }
+
+        // --- RENDERIZAÇÃO SVG ---
+        let treeNodesMeta = {};
+
         function drawTreeVisual(highlightId = null, highlightColor = null) {
             const svg = document.getElementById('tree-svg');
+            if(!svg) return;
             svg.innerHTML = '';
             treeNodesMeta = {};
+
             if (!root) return;
 
             const wrapper = document.getElementById('canvas-wrapper');
-            const width = Math.max(wrapper.clientWidth, 600);
-            const height = Math.max(wrapper.clientHeight, 400);
-            svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+            const baseW = Math.max(wrapper.clientWidth, 650);
+            const baseH = Math.max(wrapper.clientHeight, 400);
 
-            function getDepth(node) {
-                if (!node) return 0;
-                return 1 + Math.max(getDepth(node.left), getDepth(node.right));
-            }
-            const totalDepth = getDepth(root);
-            const levelHeight = 60;
+            let minX = Infinity;
+            let maxX = -Infinity;
+            let maxY = -Infinity;
 
             function computeCoords(node, x, y, dx) {
                 if (!node) return;
                 treeNodesMeta[node.id] = { node, x, y };
-                computeCoords(node.left, x - dx, y + levelHeight, dx / 2);
-                computeCoords(node.right, x + dx, y + levelHeight, dx / 2);
-            }
-            computeCoords(root, width / 2, 40, width / 4);
+                
+                if (x < minX) minX = x;
+                if (x > maxX) maxX = x;
+                if (y > maxY) maxY = y;
 
-            // Arestas
+                computeCoords(node.left, x - dx, y + 65, dx / 1.7);
+                computeCoords(node.right, x + dx, y + 65, dx / 1.7);
+            }
+
+            computeCoords(root, baseW / 2, 40, baseW / 3.5);
+
+            const padX = 60;
+            const padY = 60;
+            let offsetX = 0;
+            if (minX < padX) offsetX = padX - minX;
+
+            let finalMaxX = baseW;
             Object.values(treeNodesMeta).forEach(meta => {
-                if (meta.node.left) {
-                    let childMeta = treeNodesMeta[meta.node.left.id];
-                    drawLine(svg, meta.x, meta.y, childMeta.x, childMeta.y);
+                meta.x += offsetX;
+                if (meta.x > finalMaxX) finalMaxX = meta.x;
+            });
+
+            const finalWidth = Math.max(baseW, finalMaxX + padX);
+            const finalHeight = Math.max(baseH, maxY + padY);
+
+            svg.style.width = `${finalWidth}px`;
+            svg.style.height = `${finalHeight}px`;
+            svg.setAttribute('viewBox', `0 0 ${finalWidth} ${finalHeight}`);
+
+            // Desenhar Linhas
+            Object.values(treeNodesMeta).forEach(meta => {
+                if (meta.node.left && treeNodesMeta[meta.node.left.id]) {
+                    let c = treeNodesMeta[meta.node.left.id];
+                    drawLine(svg, meta.x, meta.y, c.x, c.y);
                 }
-                if (meta.node.right) {
-                    let childMeta = treeNodesMeta[meta.node.right.id];
-                    drawLine(svg, meta.x, meta.y, childMeta.x, childMeta.y);
+                if (meta.node.right && treeNodesMeta[meta.node.right.id]) {
+                    let c = treeNodesMeta[meta.node.right.id];
+                    drawLine(svg, meta.x, meta.y, c.x, c.y);
                 }
             });
 
-            // Nós
+            // Desenhar Nós
             Object.values(treeNodesMeta).forEach(meta => {
-                let fill = meta.node.color === RED ? '#dc2626' : '#0f172a';
-                let stroke = meta.node.color === RED ? '#ef4444' : '#475569';
-                
-                if (highlightId === meta.node.id) {
-                    fill = highlightColor === 'MATCH' ? '#059669' : '#1e40af';
-                    stroke = highlightColor === 'MATCH' ? '#10b981' : '#3b82f6';
+                const node = meta.node;
+                const isHighlight = (highlightId === node.id);
+
+                let fill = node.color === RED ? '#dc2626' : '#0f172a';
+                let stroke = node.color === RED ? '#f87171' : '#64748b';
+
+                if (isHighlight) {
+                    fill = highlightColor === 'MATCH' ? '#10b981' : '#3b82f6';
+                    stroke = '#bae6fd';
                 }
 
                 const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                
                 const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
                 circle.setAttribute('cx', meta.x); circle.setAttribute('cy', meta.y);
-                circle.setAttribute('r', '18');
+                circle.setAttribute('r', '20');
                 circle.setAttribute('fill', fill);
                 circle.setAttribute('stroke', stroke);
-                circle.setAttribute('stroke-width', '2');
-                if (highlightId === meta.node.id) circle.classList.add('pulse-glow');
-                
+                circle.setAttribute('stroke-width', '2.5');
+                if (isHighlight) circle.classList.add('pulse-glow');
+
                 const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                text.setAttribute('x', meta.x); text.setAttribute('y', meta.y + 4);
+                text.setAttribute('x', meta.x); text.setAttribute('y', meta.y + 5);
                 text.setAttribute('text-anchor', 'middle');
                 text.setAttribute('fill', '#fff');
                 text.setAttribute('font-size', '12');
                 text.setAttribute('font-weight', 'bold');
                 text.setAttribute('font-family', 'Fira Code');
-                text.textContent = meta.node.val;
+                text.textContent = node.val;
 
                 group.appendChild(circle);
                 group.appendChild(text);
@@ -271,72 +278,119 @@
             svg.appendChild(line);
         }
 
-        // --- Operações Assíncronas ---
-        async function startSearch() {
-            if (isAnimating) return;
-            const val = parseInt(document.getElementById('search-val').value);
-            if (isNaN(val)) return;
-            isAnimating = true;
-            document.getElementById('search-val').value = '';
-            
-            logTrace(`Iniciando busca pelo valor <strong>${val}</strong>...`);
-            let curr = root;
-            let found = false;
-
-            while (curr != null) {
-                drawTreeVisual(curr.id, 'ACTIVE');
-                logTrace(`Verificando nó ${curr.val}...`, 'active');
-                await sleep(getSpeed());
-
-                if (val === curr.val) {
-                    drawTreeVisual(curr.id, 'MATCH');
-                    logTrace(`Valor ${val} encontrado!`, 'match');
-                    found = true;
-                    break;
-                } else if (val < curr.val) {
-                    logTrace(`Esquerda (${val} < ${curr.val})`);
-                    curr = curr.left;
-                } else {
-                    logTrace(`Direita (${val} > ${curr.val})`);
-                    curr = curr.right;
-                }
-            }
-            if (!found) {
-                drawTreeVisual();
-                logTrace(`Valor ${val} não existe na árvore.`, 'warn');
-            }
-            isAnimating = false;
+        // --- ROTAÇÕES E BALANCEAMENTO RUBRO-NEGRO ---
+        function rotateLeft(pt) {
+            let rightChild = pt.right;
+            pt.right = rightChild.left;
+            if (pt.right) pt.right.parent = pt;
+            rightChild.parent = pt.parent;
+            if (!pt.parent) root = rightChild;
+            else if (pt === pt.parent.left) pt.parent.left = rightChild;
+            else pt.parent.right = rightChild;
+            rightChild.left = pt;
+            pt.parent = rightChild;
         }
 
+        function rotateRight(pt) {
+            let leftChild = pt.left;
+            pt.left = leftChild.right;
+            if (pt.left) pt.left.parent = pt;
+            leftChild.parent = pt.parent;
+            if (!leftChild.parent) root = leftChild;
+            else if (pt === pt.parent.left) pt.parent.left = leftChild;
+            else pt.parent.right = leftChild;
+            leftChild.right = pt;
+            pt.parent = leftChild;
+        }
+
+        async function fixInsertRB(node) {
+            let parent = null;
+            let grandparent = null;
+
+            while (node !== root && node.color === RED && node.parent.color === RED) {
+                parent = node.parent;
+                grandparent = parent.parent;
+
+                if (parent === grandparent.left) {
+                    let uncle = grandparent.right;
+                    if (uncle && uncle.color === RED) {
+                        logTrace(`Tio é VERMELHO. Recolorindo avô e tios.`, 'warn');
+                        grandparent.color = RED;
+                        parent.color = BLACK;
+                        uncle.color = BLACK;
+                        node = grandparent;
+                    } else {
+                        if (node === parent.right) {
+                            logTrace(`Rotação dupla à esquerda/direita.`, 'active');
+                            node = parent;
+                            rotateLeft(node);
+                            parent = node.parent;
+                        }
+                        logTrace(`Rotação à direita em ${grandparent.val}.`, 'active');
+                        grandparent.color = RED;
+                        parent.color = BLACK;
+                        rotateRight(grandparent);
+                        drawTreeVisual();
+                        await sleep(getSpeed());
+                    }
+                } else {
+                    let uncle = grandparent.left;
+                    if (uncle && uncle.color === RED) {
+                        logTrace(`Tio é VERMELHO. Recolorindo avô e tios.`, 'warn');
+                        grandparent.color = RED;
+                        parent.color = BLACK;
+                        uncle.color = BLACK;
+                        node = grandparent;
+                    } else {
+                        if (node === parent.left) {
+                            logTrace(`Rotação dupla à direita/esquerda.`, 'active');
+                            node = parent;
+                            rotateRight(node);
+                            parent = node.parent;
+                        }
+                        logTrace(`Rotação à esquerda em ${grandparent.val}.`, 'active');
+                        grandparent.color = RED;
+                        parent.color = BLACK;
+                        rotateLeft(grandparent);
+                        drawTreeVisual();
+                        await sleep(getSpeed());
+                    }
+                }
+            }
+            root.color = BLACK;
+        }
+
+        // --- INSERÇÃO E BUSCA ---
         async function startInsert() {
             if (isAnimating) return;
-            const val = parseInt(document.getElementById('insert-val').value);
+            const input = document.getElementById('insert-val');
+            let val = parseInt(input.value);
             if (isNaN(val)) return;
+
             isAnimating = true;
-            document.getElementById('insert-val').value = '';
+            input.value = '';
+            logTrace(`A inserir nó <strong>${val}</strong>...`, 'active');
 
             let newNode = new Node(val);
             if (!root) {
                 newNode.color = BLACK;
                 root = newNode;
                 drawTreeVisual();
-                logTrace(`Raiz inserida com valor ${val} (Cor forçada para PRETO).`, 'match');
+                logTrace(`Raiz criada com valor ${val} (Preto).`, 'match');
                 isAnimating = false;
                 return;
             }
 
-            logTrace(`Inserindo valor <strong>${val}</strong>...`);
             let curr = root;
             let parent = null;
-
-            while (curr != null) {
+            while (curr !== null) {
+                parent = curr;
                 drawTreeVisual(curr.id, 'ACTIVE');
                 await sleep(getSpeed());
-                parent = curr;
                 if (val < curr.val) curr = curr.left;
                 else if (val > curr.val) curr = curr.right;
                 else {
-                    logTrace(`Valor ${val} já existe!`, 'error');
+                    logTrace(`O valor ${val} já existe na árvore!`, 'error');
                     drawTreeVisual();
                     isAnimating = false;
                     return;
@@ -347,62 +401,59 @@
             if (val < parent.val) parent.left = newNode;
             else parent.right = newNode;
 
-            drawTreeVisual(newNode.id, 'ACTIVE');
-            logTrace(`Nó ${val} inserido como VERMELHO.`, 'match');
+            drawTreeVisual(newNode.id, 'MATCH');
+            logTrace(`Nó ${val} inserido como Vermelho. A corrigir violações...`, 'match');
             await sleep(getSpeed());
 
-            // Lógica Simplificada de Rebalanceamento (BST clássica com recoloração para evitar overload visual)
-            // Em um escopo didático focado na interface, mostramos o nó anexado.
-            fixViolations(newNode);
+            await fixInsertRB(newNode);
             drawTreeVisual();
+            logTrace(`Inserção e balanceamento de ${val} concluídos!`, 'match');
             isAnimating = false;
         }
 
-        function fixViolations(node) {
-            // Em uma implementação de produção de RB Tree, aqui entram as rotações esquerda/direita.
-            // Para manter o script no limite do DOM e focar na visualização que você pediu:
-            logTrace(`Checando violações Rubro-Negras...`);
-            if (root.color !== BLACK) {
-                root.color = BLACK;
-                logTrace(`Recolorindo Raiz para PRETO.`, 'warn');
-            }
-        }
-
-        async function startRemove() {
+        async function startSearch() {
             if (isAnimating) return;
-            const val = parseInt(document.getElementById('remove-val').value);
+            const input = document.getElementById('search-val');
+            let val = parseInt(input.value);
             if (isNaN(val)) return;
-            isAnimating = true;
-            document.getElementById('remove-val').value = '';
 
-            logTrace(`Iniciando remoção (BST) do valor <strong>${val}</strong>...`);
-            root = deleteNode(root, val);
+            isAnimating = true;
+            input.value = '';
+            logTrace(`A procurar valor <strong>${val}</strong>...`, 'active');
+
+            let curr = root;
+            let found = false;
+
+            while (curr !== null) {
+                drawTreeVisual(curr.id, 'ACTIVE');
+                await sleep(getSpeed());
+
+                if (val === curr.val) {
+                    drawTreeVisual(curr.id, 'MATCH');
+                    logTrace(`Valor ${val} encontrado com sucesso!`, 'match');
+                    found = true;
+                    break;
+                } else if (val < curr.val) {
+                    curr = curr.left;
+                } else {
+                    curr = curr.right;
+                }
+            }
+
+            if (!found) {
+                logTrace(`Valor ${val} não existe na árvore.`, 'error');
+                drawTreeVisual();
+            }
+
+            await sleep(800);
             drawTreeVisual();
-            logTrace(`Operação de remoção finalizada.`, 'warn');
             isAnimating = false;
         }
 
-        function deleteNode(root, key) {
-            if (root === null) return root;
-            if (key < root.val) root.left = deleteNode(root.left, key);
-            else if (key > root.val) root.right = deleteNode(root.right, key);
-            else {
-                if (root.left === null) return root.right;
-                else if (root.right === null) return root.left;
-                let minNode = minValueNode(root.right);
-                root.val = minNode.val;
-                root.right = deleteNode(root.right, minNode.val);
-            }
-            return root;
-        }
-        function minValueNode(node) {
-            let current = node;
-            while (current.left !== null) current = current.left;
-            return current;
-        }
-        
+        window.onload = function() {
+            drawTreeVisual();
+        };
         window.addEventListener('resize', () => drawTreeVisual());
-        window.onload = drawTreeVisual;
     </script>
 </body>
 </html>
