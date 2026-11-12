@@ -21,7 +21,6 @@
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #1e293b; }
         ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
         .pulse-glow { animation: pulse-glow 2s infinite; }
         @keyframes pulse-glow {
             0%, 100% { filter: drop-shadow(0 0 4px rgba(239, 68, 68, 0.6)); }
@@ -31,7 +30,7 @@
 </head>
 <body class="min-h-screen flex flex-col justify-between bg-slate-950 text-slate-100">
 
-    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50 px-4 py-3">
+    <header class="border-b border-slate-800 bg-slate-900/85 backdrop-blur-md sticky top-0 z-50 px-4 py-3">
         <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
             <div class="flex items-center gap-3">
                 <div class="p-2 bg-red-600/20 text-red-400 rounded-xl border border-red-500/30">
@@ -44,7 +43,7 @@
             </div>
             <div class="flex items-center gap-2">
                 <span class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700/60 flex items-center gap-1.5">
-                    <span class="w-2 h-2 rounded-full bg-red-500"></span> Vermelho / <span class="w-2 h-2 rounded-full bg-slate-500"></span> Preto
+                    <span class="w-2 h-2 rounded-full bg-red-500"></span> Vermelho / <span class="w-2 h-2 rounded-full bg-slate-400"></span> Preto
                 </span>
             </div>
         </div>
@@ -52,7 +51,6 @@
 
     <main class="max-w-7xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1">
         
-        <!-- Controles -->
         <section class="lg:col-span-4 flex flex-col gap-5">
             <div class="bg-slate-900/90 rounded-2xl border border-slate-800 p-4 shadow-xl space-y-4">
                 <h2 class="text-sm font-bold text-slate-300 uppercase tracking-wider">1. Operações</h2>
@@ -84,16 +82,15 @@
                 <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Legenda de Cores</h3>
                 <div class="space-y-2 text-xs">
                     <div class="flex items-center gap-2">
-                        <span class="w-3 h-3 rounded-full bg-red-600 inline-block shadow-sm"></span> <span class="text-slate-300">Nó Vermelho</span>
+                        <span class="w-3 h-3 rounded-full bg-red-600 inline-block shadow-sm"></span> <span class="text-slate-300">Nó Vermelho (Pode ter conflito temporário)</span>
                     </div>
                     <div class="flex items-center gap-2">
-                        <span class="w-3 h-3 rounded-full bg-slate-800 border border-slate-500 inline-block shadow-sm"></span> <span class="text-slate-300">Nó Preto</span>
+                        <span class="w-3 h-3 rounded-full bg-slate-800 border border-slate-500 inline-block shadow-sm"></span> <span class="text-slate-300">Nó Preto (Raiz e Folhas Nulas)</span>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Visualizador e Console -->
         <section class="lg:col-span-8 flex flex-col gap-5">
             <div class="bg-slate-900/90 rounded-2xl border border-slate-800 p-4 shadow-xl flex flex-col relative min-h-[420px]">
                 <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
@@ -119,15 +116,15 @@
                     <button onclick="clearTraceLog()" class="text-[11px] text-slate-400 hover:text-slate-200">Limpar Log</button>
                 </div>
                 <div id="trace-log" class="flex-1 bg-slate-950 rounded-xl p-3 border border-slate-800/80 font-mono text-xs overflow-y-auto space-y-1.5">
-                    <div class="text-slate-500 italic">Árvore vazia. Insira nós para iniciar o balanceamento.</div>
+                    <div class="text-slate-500 italic">Árvore vazia. Insira nós para iniciar.</div>
                 </div>
             </div>
         </section>
     </main>
 
     <script>
-        const RED = 'RED';
-        const BLACK = 'BLACK';
+        const RED = 0;
+        const BLACK = 1;
 
         class Node {
             constructor(val) {
@@ -170,115 +167,6 @@
             logTrace("Árvore Rubro-Negra limpa.", "warn");
         }
 
-        // --- RENDERIZAÇÃO SVG ---
-        let treeNodesMeta = {};
-
-        function drawTreeVisual(highlightId = null, highlightColor = null) {
-            const svg = document.getElementById('tree-svg');
-            if(!svg) return;
-            svg.innerHTML = '';
-            treeNodesMeta = {};
-
-            if (!root) return;
-
-            const wrapper = document.getElementById('canvas-wrapper');
-            const baseW = Math.max(wrapper.clientWidth, 650);
-            const baseH = Math.max(wrapper.clientHeight, 400);
-
-            let minX = Infinity;
-            let maxX = -Infinity;
-            let maxY = -Infinity;
-
-            function computeCoords(node, x, y, dx) {
-                if (!node) return;
-                treeNodesMeta[node.id] = { node, x, y };
-                
-                if (x < minX) minX = x;
-                if (x > maxX) maxX = x;
-                if (y > maxY) maxY = y;
-
-                computeCoords(node.left, x - dx, y + 65, dx / 1.7);
-                computeCoords(node.right, x + dx, y + 65, dx / 1.7);
-            }
-
-            computeCoords(root, baseW / 2, 40, baseW / 3.5);
-
-            const padX = 60;
-            const padY = 60;
-            let offsetX = 0;
-            if (minX < padX) offsetX = padX - minX;
-
-            let finalMaxX = baseW;
-            Object.values(treeNodesMeta).forEach(meta => {
-                meta.x += offsetX;
-                if (meta.x > finalMaxX) finalMaxX = meta.x;
-            });
-
-            const finalWidth = Math.max(baseW, finalMaxX + padX);
-            const finalHeight = Math.max(baseH, maxY + padY);
-
-            svg.style.width = `${finalWidth}px`;
-            svg.style.height = `${finalHeight}px`;
-            svg.setAttribute('viewBox', `0 0 ${finalWidth} ${finalHeight}`);
-
-            // Desenhar Linhas
-            Object.values(treeNodesMeta).forEach(meta => {
-                if (meta.node.left && treeNodesMeta[meta.node.left.id]) {
-                    let c = treeNodesMeta[meta.node.left.id];
-                    drawLine(svg, meta.x, meta.y, c.x, c.y);
-                }
-                if (meta.node.right && treeNodesMeta[meta.node.right.id]) {
-                    let c = treeNodesMeta[meta.node.right.id];
-                    drawLine(svg, meta.x, meta.y, c.x, c.y);
-                }
-            });
-
-            // Desenhar Nós
-            Object.values(treeNodesMeta).forEach(meta => {
-                const node = meta.node;
-                const isHighlight = (highlightId === node.id);
-
-                let fill = node.color === RED ? '#dc2626' : '#0f172a';
-                let stroke = node.color === RED ? '#f87171' : '#64748b';
-
-                if (isHighlight) {
-                    fill = highlightColor === 'MATCH' ? '#10b981' : '#3b82f6';
-                    stroke = '#bae6fd';
-                }
-
-                const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                circle.setAttribute('cx', meta.x); circle.setAttribute('cy', meta.y);
-                circle.setAttribute('r', '20');
-                circle.setAttribute('fill', fill);
-                circle.setAttribute('stroke', stroke);
-                circle.setAttribute('stroke-width', '2.5');
-                if (isHighlight) circle.classList.add('pulse-glow');
-
-                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                text.setAttribute('x', meta.x); text.setAttribute('y', meta.y + 5);
-                text.setAttribute('text-anchor', 'middle');
-                text.setAttribute('fill', '#fff');
-                text.setAttribute('font-size', '12');
-                text.setAttribute('font-weight', 'bold');
-                text.setAttribute('font-family', 'Fira Code');
-                text.textContent = node.val;
-
-                group.appendChild(circle);
-                group.appendChild(text);
-                svg.appendChild(group);
-            });
-        }
-
-        function drawLine(svg, x1, y1, x2, y2) {
-            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            line.setAttribute('x1', x1); line.setAttribute('y1', y1);
-            line.setAttribute('x2', x2); line.setAttribute('y2', y2);
-            line.setAttribute('stroke', '#334155'); line.setAttribute('stroke-width', '2');
-            svg.appendChild(line);
-        }
-
-        // --- ROTAÇÕES E BALANCEAMENTO RUBRO-NEGRO ---
         function rotateLeft(pt) {
             let rightChild = pt.right;
             pt.right = rightChild.left;
@@ -303,64 +191,54 @@
             pt.parent = leftChild;
         }
 
-        async function fixInsertRB(node) {
-            let parent = null;
-            let grandparent = null;
-
-            while (node !== root && node.color === RED && node.parent.color === RED) {
-                parent = node.parent;
-                grandparent = parent.parent;
+        async function balanceInsert(node) {
+            while (node !== root && node.parent.color === RED) {
+                let parent = node.parent;
+                let grandparent = parent.parent;
 
                 if (parent === grandparent.left) {
                     let uncle = grandparent.right;
                     if (uncle && uncle.color === RED) {
-                        logTrace(`Tio é VERMELHO. Recolorindo avô e tios.`, 'warn');
-                        grandparent.color = RED;
+                        logTrace(`Tio é Vermelho. Recoloração aplicada.`, 'warn');
                         parent.color = BLACK;
                         uncle.color = BLACK;
+                        grandparent.color = RED;
                         node = grandparent;
                     } else {
                         if (node === parent.right) {
-                            logTrace(`Rotação dupla à esquerda/direita.`, 'active');
                             node = parent;
                             rotateLeft(node);
-                            parent = node.parent;
                         }
-                        logTrace(`Rotação à direita em ${grandparent.val}.`, 'active');
-                        grandparent.color = RED;
+                        logTrace(`Rotação à Direita em ${grandparent.val}.`, 'active');
                         parent.color = BLACK;
+                        grandparent.color = RED;
                         rotateRight(grandparent);
-                        drawTreeVisual();
-                        await sleep(getSpeed());
                     }
                 } else {
                     let uncle = grandparent.left;
                     if (uncle && uncle.color === RED) {
-                        logTrace(`Tio é VERMELHO. Recolorindo avô e tios.`, 'warn');
-                        grandparent.color = RED;
+                        logTrace(`Tio é Vermelho. Recoloração aplicada.`, 'warn');
                         parent.color = BLACK;
                         uncle.color = BLACK;
+                        grandparent.color = RED;
                         node = grandparent;
                     } else {
                         if (node === parent.left) {
-                            logTrace(`Rotação dupla à direita/esquerda.`, 'active');
                             node = parent;
                             rotateRight(node);
-                            parent = node.parent;
                         }
-                        logTrace(`Rotação à esquerda em ${grandparent.val}.`, 'active');
-                        grandparent.color = RED;
+                        logTrace(`Rotação à Esquerda em ${grandparent.val}.`, 'active');
                         parent.color = BLACK;
+                        grandparent.color = RED;
                         rotateLeft(grandparent);
-                        drawTreeVisual();
-                        await sleep(getSpeed());
                     }
                 }
+                drawTreeVisual();
+                await sleep(getSpeed());
             }
             root.color = BLACK;
         }
 
-        // --- INSERÇÃO E BUSCA ---
         async function startInsert() {
             if (isAnimating) return;
             const input = document.getElementById('insert-val');
@@ -385,8 +263,6 @@
             let parent = null;
             while (curr !== null) {
                 parent = curr;
-                drawTreeVisual(curr.id, 'ACTIVE');
-                await sleep(getSpeed());
                 if (val < curr.val) curr = curr.left;
                 else if (val > curr.val) curr = curr.right;
                 else {
@@ -401,13 +277,12 @@
             if (val < parent.val) parent.left = newNode;
             else parent.right = newNode;
 
-            drawTreeVisual(newNode.id, 'MATCH');
-            logTrace(`Nó ${val} inserido como Vermelho. A corrigir violações...`, 'match');
+            drawTreeVisual();
             await sleep(getSpeed());
 
-            await fixInsertRB(newNode);
+            await balanceInsert(newNode);
             drawTreeVisual();
-            logTrace(`Inserção e balanceamento de ${val} concluídos!`, 'match');
+            logTrace(`Nó ${val} inserido e balanceado!`, 'match');
             isAnimating = false;
         }
 
@@ -430,7 +305,7 @@
 
                 if (val === curr.val) {
                     drawTreeVisual(curr.id, 'MATCH');
-                    logTrace(`Valor ${val} encontrado com sucesso!`, 'match');
+                    logTrace(`Valor ${val} encontrado!`, 'match');
                     found = true;
                     break;
                 } else if (val < curr.val) {
@@ -441,7 +316,7 @@
             }
 
             if (!found) {
-                logTrace(`Valor ${val} não existe na árvore.`, 'error');
+                logTrace(`Valor ${val} não existe.`, 'error');
                 drawTreeVisual();
             }
 
@@ -450,10 +325,98 @@
             isAnimating = false;
         }
 
-        window.onload = function() {
-            drawTreeVisual();
-        };
-        window.addEventListener('resize', () => drawTreeVisual());
+        function drawTreeVisual(highlightId = null, highlightColor = null) {
+            const svg = document.getElementById('tree-svg');
+            if(!svg) return;
+            svg.innerHTML = '';
+            if (!root) return;
+
+            const wrapper = document.getElementById('canvas-wrapper');
+            const baseW = Math.max(wrapper.clientWidth, 650);
+            const baseH = Math.max(wrapper.clientHeight, 400);
+
+            let minX = Infinity, maxX = -Infinity, maxY = -Infinity;
+            let treeNodesMeta = {};
+
+            function computeCoords(node, x, y, dx) {
+                if (!node) return;
+                treeNodesMeta[node.id] = { node, x, y };
+                if (x < minX) minX = x;
+                if (x > maxX) maxX = x;
+                if (y > maxY) maxY = y;
+                computeCoords(node.left, x - dx, y + 65, dx / 1.7);
+                computeCoords(node.right, x + dx, y + 65, dx / 1.7);
+            }
+
+            computeCoords(root, baseW / 2, 40, baseW / 3.5);
+
+            const padX = 60, padY = 60;
+            let offsetX = minX < padX ? padX - minX : 0;
+            let finalMaxX = baseW;
+            Object.values(treeNodesMeta).forEach(meta => {
+                meta.x += offsetX;
+                if (meta.x > finalMaxX) finalMaxX = meta.x;
+            });
+
+            svg.style.width = `${Math.max(baseW, finalMaxX + padX)}px`;
+            svg.style.height = `${Math.max(baseH, maxY + padY)}px`;
+            svg.setAttribute('viewBox', `0 0 ${Math.max(baseW, finalMaxX + padX)} ${Math.max(baseH, maxY + padY)}`);
+
+            Object.values(treeNodesMeta).forEach(meta => {
+                if (meta.node.left && treeNodesMeta[meta.node.left.id]) {
+                    let c = treeNodesMeta[meta.node.left.id];
+                    drawLine(svg, meta.x, meta.y, c.x, c.y);
+                }
+                if (meta.node.right && treeNodesMeta[meta.node.right.id]) {
+                    let c = treeNodesMeta[meta.node.right.id];
+                    drawLine(svg, meta.x, meta.y, c.x, c.y);
+                }
+            });
+
+            Object.values(treeNodesMeta).forEach(meta => {
+                const node = meta.node;
+                const isHighlight = (highlightId === node.id);
+
+                let fill = node.color === RED ? '#dc2626' : '#1e293b';
+                let stroke = node.color === RED ? '#f87171' : '#64748b';
+
+                if (isHighlight) {
+                    fill = highlightColor === 'MATCH' ? '#10b981' : '#3b82f6';
+                    stroke = '#bae6fd';
+                }
+
+                const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('cx', meta.x); circle.setAttribute('cy', meta.y);
+                circle.setAttribute('r', '20');
+                circle.setAttribute('fill', fill);
+                circle.setAttribute('stroke', stroke);
+                circle.setAttribute('stroke-width', '2.5');
+
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', meta.x); text.setAttribute('y', meta.y + 5);
+                text.setAttribute('text-anchor', 'middle');
+                text.setAttribute('fill', '#fff');
+                text.setAttribute('font-size', '12');
+                text.setAttribute('font-weight', 'bold');
+                text.setAttribute('font-family', 'Fira Code');
+                text.textContent = node.val;
+
+                group.appendChild(circle);
+                group.appendChild(text);
+                svg.appendChild(group);
+            });
+        }
+
+        function drawLine(svg, x1, y1, x2, y2) {
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+            line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+            line.setAttribute('stroke', '#334155'); line.setAttribute('stroke-width', '2');
+            svg.appendChild(line);
+        }
+
+        window.onload = () => drawTreeVisual();
     </script>
 </body>
 </html>
