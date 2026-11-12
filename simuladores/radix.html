@@ -147,7 +147,7 @@
             constructor(prefix = '') {
                 this.id = Math.random().toString(36).substr(2, 9);
                 this.prefix = prefix;
-                this.children = []; // Lista de nós filhos para evitar conflitos de dicionário
+                this.children = []; 
                 this.isEnd = false;
             }
         }
@@ -279,51 +279,55 @@
             svg.appendChild(text);
         }
 
-        // --- INSERÇÃO RADIX BLINDADA COM LISTA DE FILHOS ---
-        function insertRadixSafe(currNode, word) {
-            for (let i = 0; i < currNode.children.length; i++) {
-                let child = currNode.children[i];
+        // --- INSERÇÃO RECURSIVA PURA E BLINDADA ---
+        function insertRecursive(node, word) {
+            for (let i = 0; i < node.children.length; i++) {
+                let child = node.children[i];
                 let idx = commonPrefixLength(child.prefix, word);
 
                 if (idx > 0) {
                     if (idx === child.prefix.length) {
+                        // O prefixo do filho está inteiramente contido na palavra
                         let remainder = word.substring(idx);
                         if (remainder === "") {
                             child.isEnd = true;
                         } else {
-                            insertRadixSafe(child, remainder);
+                            insertRecursive(child, remainder);
                         }
                         return;
                     } else {
-                        // Split seguro do nó sem perder referências de array
+                        // Divergência: é necessário dividir o nó (Split)
                         let common = child.prefix.substring(0, idx);
                         let remainderChild = child.prefix.substring(idx);
                         let remainderWord = word.substring(idx);
 
-                        let intersectionNode = new RadixNode(common);
-                        intersectionNode.isEnd = false;
+                        let splitNode = new RadixNode(common);
+                        splitNode.isEnd = false;
 
+                        // O filho antigo ajusta o prefixo e vai para baixo do splitNode
                         child.prefix = remainderChild;
-                        intersectionNode.children.push(child);
+                        splitNode.children.push(child);
 
+                        // Se sobrou parte da nova palavra, cria um novo nó folha
                         if (remainderWord === "") {
-                            intersectionNode.isEnd = true;
+                            splitNode.isEnd = true;
                         } else {
                             let newLeaf = new RadixNode(remainderWord);
                             newLeaf.isEnd = true;
-                            intersectionNode.children.push(newLeaf);
+                            splitNode.children.push(newLeaf);
                         }
 
-                        currNode.children[i] = intersectionNode;
+                        // Substitui o filho antigo no array de filhos do nó atual
+                        node.children[i] = splitNode;
                         return;
                     }
                 }
             }
 
-            // Se não encontrou prefixo comum com nenhum filho, adiciona novo ramo
-            let newNode = new RadixNode(word);
-            newNode.isEnd = true;
-            currNode.children.push(newNode);
+            // Se nenhum filho partilha prefixo, adiciona como novo ramo direto
+            let newLeaf = new RadixNode(word);
+            newLeaf.isEnd = true;
+            node.children.push(newLeaf);
         }
 
         async function startInsert() {
@@ -336,7 +340,7 @@
             input.value = '';
             logTrace(`A inserir "<strong>${word}</strong>"...`, 'active');
 
-            insertRadixSafe(root, word);
+            insertRecursive(root, word);
             
             logTrace(`Palavra "<strong>${word}</strong>" inserida com sucesso!`, 'match');
             drawTreeVisual();
