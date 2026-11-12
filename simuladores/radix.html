@@ -145,7 +145,6 @@
         function getSpeed() { return 1600 - parseInt(document.getElementById('animation-speed').value); }
         function sleep(ms) { return new Promise(resolve => setTimeout(resolve, Math.max(0, ms))); }
 
-        // --- ESTRUTURA RADIX NODE ---
         class RadixNode {
             constructor(prefix = '') {
                 this.id = Math.random().toString(36).substr(2, 9);
@@ -166,7 +165,6 @@
             logTrace("Radix Tree limpa com sucesso.", "warn");
         }
 
-        // Função auxiliar para encontrar o prefixo comum entre duas strings
         function commonPrefix(str1, str2) {
             let i = 0;
             while (i < str1.length && i < str2.length && str1[i] === str2[i]) {
@@ -201,14 +199,14 @@
 
             levels.forEach((lvlNodes, depth) => {
                 let totalInLevel = lvlNodes.length;
-                let spacing = Math.max(80, baseW / (totalInLevel + 1));
+                let spacing = Math.max(90, baseW / (totalInLevel + 1));
                 
                 lvlNodes.forEach((node, idx) => {
                     let x = spacing * (idx + 1);
                     let y = currentY;
                     nodePositions[node.id] = { node, x, y };
                 });
-                currentY += 80;
+                currentY += 85;
             });
 
             let finalWidth = Math.max(baseW, 650);
@@ -245,7 +243,7 @@
                 const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
                 const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
                 circle.setAttribute('cx', meta.x); circle.setAttribute('cy', meta.y);
-                circle.setAttribute('r', isRoot ? '16' : '20');
+                circle.setAttribute('r', isRoot ? '16' : '22');
                 circle.setAttribute('fill', fill);
                 circle.setAttribute('stroke', stroke);
                 circle.setAttribute('stroke-width', '2.5');
@@ -258,7 +256,7 @@
                 text.setAttribute('font-size', '11');
                 text.setAttribute('font-weight', 'bold');
                 text.setAttribute('font-family', 'Fira Code');
-                text.textContent = isRoot ? 'Ø' : (node.prefix.length > 5 ? node.prefix.substring(0,4)+'..' : node.prefix);
+                text.textContent = isRoot ? 'Ø' : node.prefix;
 
                 group.appendChild(circle);
                 group.appendChild(text);
@@ -274,8 +272,9 @@
             svg.appendChild(line);
 
             const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            text.setAttribute('x', (x1 + x2) / 2 - 10);
-            text.setAttribute('y', (y1 + y2) / 2 - 5);
+            text.setAttribute('x', (x1 + x2) / 2);
+            text.setAttribute('y', ((y1 + y2) / 2) - 6);
+            text.setAttribute('text-anchor', 'middle');
             text.setAttribute('fill', '#38bdf8');
             text.setAttribute('font-size', '11');
             text.setAttribute('font-weight', 'bold');
@@ -284,11 +283,8 @@
             svg.appendChild(text);
         }
 
-        // --- INSERÇÃO RADIX SIMPLIFICADA E SEGURA ---
-        async function insertWord(node, word) {
-            drawTreeVisual(node.id);
-            await sleep(getSpeed());
-
+        // --- INSERÇÃO RADIX ROBUSTA ---
+        function insertRadix(node, word) {
             let keys = Object.keys(node.children);
             for (let k of keys) {
                 let child = node.children[k];
@@ -296,26 +292,19 @@
 
                 if (idx > 0) {
                     if (idx === child.prefix.length) {
-                        // O prefixo do filho está totalmente contido na palavra
-                        logTrace(`Prefixo "${child.prefix}" coincide. A descer no ramo...`, 'active');
-                        return await insertWord(child, word.substring(idx));
+                        return insertRadix(child, word.substring(idx));
                     } else {
-                        // É preciso dividir o nó (Splitting)
-                        logTrace(`A dividir o nó "${child.prefix}" no ponto comum "${child.prefix.substring(0, idx)}"...`, 'warn');
-                        
+                        // Split do nó
                         let common = child.prefix.substring(0, idx);
                         let remainderChild = child.prefix.substring(idx);
                         let remainderWord = word.substring(idx);
 
-                        // Cria novo nó intermédio
                         let newNode = new RadixNode(common);
                         newNode.isEnd = false;
-                        
-                        // Reajusta o filho antigo
+
                         child.prefix = remainderChild;
                         newNode.children[remainderChild[0]] = child;
 
-                        // Insere o resto da nova palavra
                         if (remainderWord === "") {
                             newNode.isEnd = true;
                         } else {
@@ -326,21 +315,14 @@
 
                         node.children[common[0]] = newNode;
                         delete node.children[k];
-                        
-                        drawTreeVisual(newNode.id);
-                        await sleep(getSpeed());
                         return;
                     }
                 }
             }
 
-            // Se nenhum filho partilha prefixo, adiciona diretamente como novo ramo
-            logTrace(`Criado novo nó compactado com "${word}".`, 'match');
             let newNode = new RadixNode(word);
             newNode.isEnd = true;
             node.children[word[0]] = newNode;
-            drawTreeVisual(newNode.id);
-            await sleep(getSpeed());
         }
 
         async function startInsert() {
@@ -351,13 +333,13 @@
 
             isAnimating = true;
             input.value = '';
-            logTrace(`A inserir "<strong>${word}</strong>" na Radix Tree...`, 'active');
+            logTrace(`A inserir "<strong>${word}</strong>"...`, 'active');
 
-            await insertWord(root, word);
+            insertRadix(root, word);
             
             logTrace(`Palavra "<strong>${word}</strong>" inserida com sucesso!`, 'match');
-            await sleep(800);
             drawTreeVisual();
+            await sleep(400);
             isAnimating = false;
         }
 
@@ -373,6 +355,7 @@
 
             let curr = root;
             let found = false;
+            let searchWord = word;
 
             while (true) {
                 drawTreeVisual(curr.id);
@@ -383,35 +366,29 @@
 
                 for (let k of keys) {
                     let child = curr.children[k];
-                    if (word.startsWith(child.prefix)) {
+                    if (searchWord.startsWith(child.prefix)) {
                         curr = child;
-                        word = word.substring(child.prefix.length);
-                        matched = true;
-                        break;
-                    } else if (child.prefix.startsWith(word)) {
-                        // O prefixo da busca esgotou-se dentro de um nó
-                        curr = child;
-                        word = "";
+                        searchWord = searchWord.substring(child.prefix.length);
                         matched = true;
                         break;
                     }
                 }
 
                 if (!matched) break;
-                if (word === "") {
+                if (searchWord === "") {
                     if (curr.isEnd) found = true;
                     break;
                 }
             }
 
             drawTreeVisual(curr.id);
-            if (found || word === "") {
-                logTrace(`Termo encontrado com sucesso na Radix Tree!`, 'match');
+            if (found) {
+                logTrace(`Termo "<strong>${word}</strong>" encontrado com sucesso!`, 'match');
             } else {
-                logTrace(`Termo NÃO encontrado.`, 'error');
+                logTrace(`Termo "<strong>${word}</strong>" NÃO encontrado.`, 'error');
             }
 
-            await sleep(1000);
+            await sleep(800);
             drawTreeVisual();
             isAnimating = false;
         }
